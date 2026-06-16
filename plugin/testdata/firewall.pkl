@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/security/firewall.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new firewall.Firewall {
+    label = "firewall-\(v.testRunID)"
+    name = "formae-conf-firewall-\(v.testRunID)"
+    rules = new Listing {
+      new firewall.FirewallRule {
+        direction = "in"
+        protocol = "tcp"
+        sourceIps = new Listing { "0.0.0.0/0" }
+        port = "22"
+      }
+    }
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+    }
+  }
+}

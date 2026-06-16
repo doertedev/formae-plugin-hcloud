@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.compute.server
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Compute::Server"
+
+open class ServerResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: ServerResolvable = (this) {
+        property = "id"
+    }
+
+    hidden ipv4: ServerResolvable = (this) {
+        property = "ipv4"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class Server extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+    }
+    name: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    serverType: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    image: String
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    location: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    sshKeys: Listing<String>?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    userData: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    ipv4: String?
+
+    local parent = this
+
+    hidden res: ServerResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

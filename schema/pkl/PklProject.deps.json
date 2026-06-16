@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "resolvedDependencies": {
+    "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0": {
+      "type": "remote",
+      "uri": "projectpackage://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.86.0",
+      "checksums": {
+        "sha256": "e43a47a61d14201a1d56fda4d1bdf5d01b17130530235acfb14f347e096d379c"
+      }
+    }
+  }
+}

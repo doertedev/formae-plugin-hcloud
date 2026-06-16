@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.security.firewall
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Security::Firewall"
+
+open class FirewallResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: FirewallResolvable = (this) {
+        property = "id"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class Firewall extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+    }
+    name: String
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint
+    rules: Listing<FirewallRule>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    local parent = this
+
+    hidden res: FirewallResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}
+
+/// FirewallRule is the shape of a single rule. Port is only valid when
+/// Protocol is "tcp" or "udp" — the plugin rejects other combinations at
+/// create/update time with InvalidRequest.
+class FirewallRule {
+    direction: ("in"|"out")
+    protocol: ("tcp"|"udp"|"icmp"|"esp"|"gre")
+    sourceIps: Listing<String>?
+    destinationIps: Listing<String>?
+    port: String?
+}

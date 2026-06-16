@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud
+
+import "@formae/formae.pkl"
+
+open class Config {
+  hidden fixed type: String = "HETZNER"
+
+  @formae.ConfigFieldHint { createOnly = true }
+  hidden token: String
+
+  fixed Type: String = type
+  fixed Token: String = token
+}
+
+class FieldHint extends formae.FieldHint {}
+
+// extractable defaults to false because this plugin's schema package is not
+// (yet) published to the registry at hub.platform.engineering. The formae CLI's
+// `extract` command resolves the schema as a remote `package://` dependency, so
+// until the package is published it 404s during `pkl project resolve`. The
+// conformance harness honours Extractable=false by skipping the extract phase.
+// Remove this override (or set extractable=true per resource) once the schema
+// package is published.
+class ResourceHint extends formae.ResourceHint {
+    extractable = false
+}

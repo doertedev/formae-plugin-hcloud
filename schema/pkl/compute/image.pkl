@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.compute.image
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Compute::Image"
+
+open class ImageResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: ImageResolvable = (this) {
+        property = "id"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class Image extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    server: Int
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    description: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    type: String
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    name: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    imageSize: Float?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    diskSize: Float?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    created: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    status: String?
+
+    local parent = this
+
+    hidden res: ImageResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/security/certificate.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new certificate.Certificate {
+    label = "certificate-\(v.testRunID)"
+    name = "formae-conf-certificate-\(v.testRunID)"
+    certificate = """
+-----BEGIN CERTIFICATE-----
+MIIDJTCCAg2gAwIBAgIUOPoNcXMrpWLSETTQuC0B1MGVQvQwDQYJKoZIhvcNAQEL
+BQAwIjEgMB4GA1UEAwwXZm9ybWFlLWNvbmZvcm1hbmNlLXRlc3QwHhcNMjYwNjE1
+MTgyNjM0WhcNMjYwNjIyMTgyNjM0WjAiMSAwHgYDVQQDDBdmb3JtYWUtY29uZm9y
+bWFuY2UtdGVzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKRkCual
+0Yk0nKyA0AtYUtPc6bp/pYf/muU6lhpOKuyuqmECibucxpssBmsbRReTD+eJb8/b
++gV8l3EWjgcP5YUdJsPGI8EkiBmNuJFUoM9EHhsupOIYxuvfpOM4cxP/O7pFdoot
+ALpTNf4+fU8/bebOZXEy38jy2Zybv7oGVzewwy2DAcFfv7A5NJSX+IA+wa48oGAS
+fZFT/itWys9k2fTQUlM4ym1jjInBuzpfxa/bFcFXMgJ/PIFnAdtc1aapMOyC0pql
+JvL5/bENXHiLjDghbQI4InjQNsT0RlrgjA/kQ6WRUP6Bb0fIBEKwQ000bi38U5st
+ulzQIGCfd6gmvL0CAwEAAaNTMFEwHQYDVR0OBBYEFDW4+nVsJmYsmURquOM+hltD
+M8EGMB8GA1UdIwQYMBaAFDW4+nVsJmYsmURquOM+hltDM8EGMA8GA1UdEwEB/wQF
+MAMBAf8wDQYJKoZIhvcNAQELBQADggEBABdU+P7qJMRPO4L46MtekhtYyDruw8GA
+ibphMR0LDSdm43Tpjz1F3GBGUiUIP8Bm01apl2ivJZrfNtBDBDSoJ7moxVCkNPg8
+sJETn5qXWsLKmCxaAFr2f4PtS3e2dbh89om1QrBfgsieZ6CSvbNTbeXnV/wmcL4l
+I/jfdyldAdlAiVdNtm3T0SVwmgqAC4LB8S7vnncTNo11JGEKHKOwBIb0fFrN12o4
+pdIYFGkGmAYXSDjHjRDiCTLBktFDIpvB2EXzgGZ1ZZUGIdGdl2xPzoUmzQxAG+Nu
+RgBpOS5WJDpt5LrZh7CjANzXU8ItJuZpYBft6Mh8Ii9BlreVlWa5GqY=
+-----END CERTIFICATE-----
+""".trim()
+    privateKey = """
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCkZArmpdGJNJys
+gNALWFLT3Om6f6WH/5rlOpYaTirsrqphAom7nMabLAZrG0UXkw/niW/P2/oFfJdx
+Fo4HD+WFHSbDxiPBJIgZjbiRVKDPRB4bLqTiGMbr36TjOHMT/zu6RXaKLQC6UzX+
+Pn1PP23mzmVxMt/I8tmcm7+6Blc3sMMtgwHBX7+wOTSUl/iAPsGuPKBgEn2RU/4r
+VsrPZNn00FJTOMptY4yJwbs6X8Wv2xXBVzICfzyBZwHbXNWmqTDsgtKapSby+f2x
+DVx4i4w4IW0COCJ40DbE9EZa4IwP5EOlkVD+gW9HyARCsENNNG4t/FObLbpc0CBg
+n3eoJry9AgMBAAECggEAAZHR99NP/Z0ivNPrCJyyh8LVeXokCLkkT7mAOuaRqtpd
+FpmJWqD71Xn1YrrrLTcygO2zQ1sQl1JR+Nq0BvW8JYn6d4aSC1NPuFy9zSdvdKMs
+HWrT2LPPXGuxfZjpomB+v7/PirC0z9KhEpkipanPoRNJ7SuE7vyAnunuyfYrCYVS
+38OUXOBaHcw/VsxkJBQJ4fGF4gqaIaCn8enZDbxYs/eekHWLWhfCqosRDbrS0igK
+Wh666tI07YugWo5cD3x+mRgiSYrr+f4jcmpCE8Qsbn9cR//TgoqW5aRWkqYz1/tX
+9t4EJuCzvoWwU4LOJ2qNADVNtTg7T1zpwXIInqRzuQKBgQDXB4uWY8x9a3rFRpn4
+6mJyV1lGI2MkyxlOBk0VQ2Ev6bSPdYBKlpdDL7CuFAmf0oRUbrWXL6SQ95Uz2ORp
+VDFiVtSgm8P2PAl/hqaw1tsIRTqs+VrYTIiS11ALFa1sl0388U4GVqQ1t/oRDiPz
+A3T3wv4utlyRMziBciwXA9rSKQKBgQDDtoDUA2GOGNIEGW4ETXojxtFsNiUzp/Cc
+EeUBTNkKKG6x9U1j3HrEkvCXACKUVQ9ct/RU8oJnukbZ5sSsnYRaQlT0qMdol8zS
+n++fc1uLWFfbZmd2aTJKIu8c5ix6UfOtaBMCSWtxUDcnLsRLScQzhmF9WqpIhdt8
+Aq99aXUwdQKBgGGqrK0vQSdKVSYbjj3v/60dnY/s7NA+a4zz8bkRtKf1h6yNWysF
+wUij9aTrtv9ft/k9m79CxYWO3rcA8aYhtpiLBeK5PUWvOUUyHK4/uJbGEwOT8r5B
+7Np9b37JZs7m3mZgF+drHQTFPpDWkl+Dl3IdoCQJcnwE/spU2E/P0WkZAoGAA9TX
+0s66IzEDM4dX6welQ3wJ74dj1Q4NnNCQ3iSl/xfpitxVhoXzdVO3GA2tn5/GrDcB
+toQE34j7CBsHcKWoyKeRyDRhqv+Fx/3PkByPBzxUg/wOPHg0vtTOP4+WAVMHZTar
+YJkVXGOIoOC+gQbRq3yO/gg/WyobsOLQkrD01V0CgYEAv50+V7yqgYTUxxWc6GE3
+FZuTxPLi2T+YHDNhUQFCxZusd4srtQ67SYA6zVth31T85c9e4KvIchS6KKO/3rKW
+3efkiQ4y06zA3HAsEgwFW2i1KeI5atOnwtmRVOZo4xu/hc/wKplsg/CaF/zlSMVQ
+s9AhhN4mFJ/jCckcL7AbAec=
+-----END PRIVATE KEY-----
+""".trim()
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+    }
+  }
+}

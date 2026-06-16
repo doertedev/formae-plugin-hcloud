@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/compute/server.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new server.Server {
+    label = "server-\(v.testRunID)"
+    name = "formae-conf-server-\(v.testRunID)"
+    serverType = read?("env:HCLOUD_SERVER_TYPE") ?? "cx23"
+    image = read?("env:HCLOUD_IMAGE") ?? "ubuntu-24.04"
+    location = v.location
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+    }
+  }
+}

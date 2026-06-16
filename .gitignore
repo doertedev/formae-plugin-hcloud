@@ -1,0 +1,10 @@
+bin/
+/formae-plugin-hcloud
+.out/
+/dist/
+*.zip
+
+# Local dev tooling
+.opencode/
+.tool-versions
+.env

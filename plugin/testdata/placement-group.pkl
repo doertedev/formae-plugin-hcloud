@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/compute/placement_group.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new placement_group.PlacementGroup {
+    label = "placement-group-\(v.testRunID)"
+    name = "formae-conf-placement-group-\(v.testRunID)"
+    type = "spread"
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+    }
+  }
+}

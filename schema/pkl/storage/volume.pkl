@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.storage.volume
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Storage::Volume"
+
+open class VolumeResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: VolumeResolvable = (this) {
+        property = "id"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class Volume extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+    }
+    name: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    size: Int
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    server: Int?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    location: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    format: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    autoMount: Boolean?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    linuxDevice: String?
+
+    local parent = this
+
+    hidden res: VolumeResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

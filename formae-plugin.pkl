@@ -1,0 +1,12 @@
+name = "hcloud"
+version = "0.1.0"
+namespace = "HETZNER"
+summary = "Hetzner Cloud resource plugin"
+description = "Hetzner Cloud (hcloud) resource plugin for formae"
+category = "cloud"
+license = "Apache-2.0"
+minFormaeVersion = "0.86.0"
+
+output {
+  renderer = new JsonRenderer {}
+}

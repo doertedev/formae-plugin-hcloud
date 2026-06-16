@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// formae-plugin-hcloud — orbital (.opkg) package definition.
+// Amends the orbital schema; validated with `ops opkg build`.
+
+amends "orbital:/opkg.pkl"
+
+import "orbital:/requirement.pkl"
+import "pkl:semver"
+import "./formae-plugin.pkl" as plugin
+
+// All identity/metadata is derived from the plugin manifest (formae-plugin.pkl)
+// so this package cannot drift from it — mirroring formae-plugin-ovh. In
+// particular the namespace comes from plugin.namespace ("HETZNER"), NOT a
+// hardcoded value: the plugin manager associates a package with its plugin via
+// `pkg.Metadata["plugin"]["namespace"]` (see formae plugin_manager.go,
+// `pluginFromPackage`), so a mismatch here breaks package→plugin association
+// at install/discovery time.
+name        = plugin.name
+version     = semver.Version(plugin.version)
+publisher   = "platform.engineering"
+license     = plugin.license
+summary     = if (plugin.hasProperty("summary")) plugin.summary else plugin.name
+description = if (plugin.hasProperty("description")) plugin.description else plugin.summary
+
+requirements = new Listing<requirement.Requirement> {
+  new {
+    name = "pkl"
+    method = "depends"
+    operator = "ANY"
+  }
+  // formae >= minFormaeVersion declared in formae-plugin.pkl.
+  new {
+    name = "formae"
+    method = "depends"
+    operator = "GTE"
+    version = semver.Version(plugin.minFormaeVersion)
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ⚠️ REQUIRES VALIDATION (pel/orbital toolchain):
+//
+// The formae plugin manager classifies this package as a plugin via
+// `pkg.Metadata["display"]["kind"] == "plugin"` and reads
+// `pkg.Metadata["plugin"]["type"]` and `["namespace"]`
+// (see formae internal/metastructure/plugin_manager/plugin_manager.go,
+// `isPluginPackage` and `pluginFromPackage`).
+//
+// The exact field(s) the `orbital:/opkg.pkl` schema exposes for declaring
+// this metadata could NOT be validated in this environment — the
+// `orbital:` module resolver is unavailable outside the pel toolchain.
+// The block below is the best-effort shape: a top-level `metadata` mapping
+// carrying `display` and `plugin` sub-mappings. If the opkg schema uses a
+// different surface (e.g. top-level `display` / `plugin` objects, or a
+// typed `metadata: PluginMetadata`), adjust accordingly. Until validated,
+// DO NOT trust this block to round-trip through `ops opkg build`.
+// -----------------------------------------------------------------------------
+metadata = new Mapping<String, Mapping<String, String>> {
+  ["display"] = new Mapping<String, String> {
+    ["kind"] = "plugin"
+    ["category"] = if (plugin.hasProperty("category")) plugin.category else "other"
+  }
+  ["plugin"] = new Mapping<String, String> {
+    ["type"] = if (plugin.hasProperty("type")) plugin.type else "resource"
+    ["namespace"] = plugin.namespace
+  }
+}

@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.network.primary_ip
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Network::PrimaryIP"
+
+open class PrimaryIPResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: PrimaryIPResolvable = (this) {
+        property = "id"
+    }
+
+    hidden ip: PrimaryIPResolvable = (this) {
+        property = "ip"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class PrimaryIP extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    name: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    type: String
+
+    @hcloud.FieldHint {
+        createOnly = true
+        hasProviderDefault = true
+    }
+    assigneeType: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+        hasProviderDefault = true
+    }
+    assigneeId: Int?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    location: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    autoDelete: Boolean?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    ip: String?
+
+    local parent = this
+
+    hidden res: PrimaryIPResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/network/primary_ip.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new primary_ip.PrimaryIP {
+    label = "primary-ip-\(v.testRunID)"
+    name = "formae-conf-primary-ip-\(v.testRunID)"
+    type = "ipv4"
+    location = v.location
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+    }
+  }
+}

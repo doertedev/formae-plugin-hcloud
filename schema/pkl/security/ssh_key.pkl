@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.security.ssh_key
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Security::SSHKey"
+
+open class SSHKeyResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: SSHKeyResolvable = (this) {
+        property = "id"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class SSHKey extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+    }
+    name: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    publicKey: String
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    fingerprint: String?
+
+    local parent = this
+
+    hidden res: SSHKeyResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.security.certificate
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Security::Certificate"
+
+open class CertificateResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: CertificateResolvable = (this) {
+        property = "id"
+    }
+
+    hidden fingerprint: CertificateResolvable = (this) {
+        property = "fingerprint"
+    }
+
+    hidden notValidAfter: CertificateResolvable = (this) {
+        property = "notValidAfter"
+    }
+
+    hidden notValidBefore: CertificateResolvable = (this) {
+        property = "notValidBefore"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class Certificate extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+    }
+    name: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    certificate: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+        writeOnly = true
+    }
+    privateKey: String
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    fingerprint: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    notValidAfter: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    notValidBefore: String?
+
+    local parent = this
+
+    hidden res: CertificateResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

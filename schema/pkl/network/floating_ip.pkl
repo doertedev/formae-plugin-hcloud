@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.network.floating_ip
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Network::FloatingIP"
+
+open class FloatingIPResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: FloatingIPResolvable = (this) {
+        property = "id"
+    }
+
+    hidden ip: FloatingIPResolvable = (this) {
+        property = "ip"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class FloatingIP extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    type: String
+
+    @hcloud.FieldHint
+    description: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    homeLocation: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    server: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    ip: String?
+
+    local parent = this
+
+    hidden res: FloatingIPResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

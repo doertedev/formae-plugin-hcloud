@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module hcloud.network.load_balancer
+
+import "@formae/formae.pkl"
+import "../hcloud.pkl"
+
+const type = "HETZNER::Network::LoadBalancer"
+
+open class LoadBalancerResolvable extends formae.Resolvable {
+    hidden type = module.type
+
+    hidden id: LoadBalancerResolvable = (this) {
+        property = "id"
+    }
+
+    hidden ipv4: LoadBalancerResolvable = (this) {
+        property = "ipv4"
+    }
+
+    hidden ipv6: LoadBalancerResolvable = (this) {
+        property = "ipv6"
+    }
+}
+
+@hcloud.ResourceHint {
+    type = module.type
+    identifier = "id"
+    portable = true
+}
+open class LoadBalancer extends formae.Resource {
+    @hcloud.FieldHint {
+        required = true
+    }
+    name: String
+
+    @hcloud.FieldHint {
+        required = true
+        createOnly = true
+    }
+    loadBalancerType: String
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    location: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+    }
+    networkZone: String?
+
+    @hcloud.FieldHint {
+        createOnly = true
+        hasProviderDefault = true
+    }
+    algorithm: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    labels: Mapping<String, String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    id: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    ipv4: String?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    ipv6: String?
+
+    local parent = this
+
+    hidden res: LoadBalancerResolvable = new {
+        label = parent.label
+        stack = parent.stack?.label
+    }
+}

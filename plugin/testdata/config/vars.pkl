@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: Apache-2.0
+
+import "@formae/formae.pkl"
+import "@hcloud/hcloud.pkl"
+
+// Common test configuration
+stackName = "formae-conformance-test"
+
+// Read the test run ID from environment variable set by the test harness.
+// This ensures consistent naming within a test run but unique names between runs.
+testRunID = read("env:FORMAE_TEST_RUN_ID")
+
+// Default location for hcloud resources (used by server, volume, primary_ip, etc.).
+location = read?("env:HCLOUD_LOCATION") ?? "fsn1"
+
+// Common stack definition
+stack = new formae.Stack {
+  label = stackName
+  description = "formae conformance test for the hcloud plugin"
+}
+
+// Common target definition with Hetzner Cloud API credentials
+target = new formae.Target {
+  label = "hcloud-target"
+  config = new hcloud.Config {
+    token = read("env:HCLOUD_TOKEN")
+  }
+}
