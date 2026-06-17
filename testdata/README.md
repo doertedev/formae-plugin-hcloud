@@ -1,7 +1,7 @@
 # testdata/
 
 This directory holds **conformance fixtures only** — Pkl `forma` files consumed
-by the formae conformance harness via `plugin/conformance_test.go` (build tag
+by the formae conformance harness via `conformance_test.go` (build tag
 `conformance`).
 
 Each fixture (`*.pkl`) declares a single, cheapest-possible resource of one
@@ -14,11 +14,11 @@ extract) end-to-end through `formae apply` / `inventory` / `extract` / `sync` /
 ## What does NOT live here
 
 - These are **not** inputs to the direct live hcloud API smoke tests. Those
-  tests live in `plugin/*_integration_test.go` (build tag `integration`), call
+  tests live in `pkg/*_integration_test.go` (build tag `integration`), call
   the hcloud Go SDK directly, and build their inputs inline in Go — they never
   read this directory.
 - These are **not** golden/canned responses for unit tests either. The
-  in-process unit/mock tests in `plugin/*_test.go` construct their inputs in
+  in-process unit/mock tests in `pkg/*_test.go` construct their inputs in
   Go as well.
 
 ## Layout

@@ -5,13 +5,10 @@ module hcloud
 import "@formae/formae.pkl"
 
 open class Config {
-  hidden fixed type: String = "HETZNER"
+  fixed type: String = "HETZNER"
 
   @formae.ConfigFieldHint { createOnly = true }
-  hidden token: String
-
-  fixed Type: String = type
-  fixed Token: String = token
+  token: String
 }
 
 class FieldHint extends formae.FieldHint {}

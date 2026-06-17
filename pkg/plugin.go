@@ -140,8 +140,9 @@ func newPluginWithClient(c hcloudAPI) *Plugin { return &Plugin{client: c} }
 
 // resolveToken extracts the hcloud API token. A non-empty "token" field in
 // the target config JSON ({"token":"..."}) wins; otherwise the HCLOUD_TOKEN
-// environment variable is consulted. Empty/nil/null target config falls back
-// to the env var so existing deployments keep working.
+// environment variable is consulted. The legacy "Token" shape is accepted for
+// compatibility with older schema output. Empty/nil/null target config falls
+// back to the env var so existing deployments keep working.
 //
 // A malformed target config (genuine JSON parse error) is surfaced as an
 // error rather than silently falling through to HCLOUD_TOKEN: a typo'd token
@@ -152,13 +153,17 @@ func resolveToken(targetConfig json.RawMessage) (string, error) {
 	trimmed := strings.TrimSpace(string(targetConfig))
 	if len(trimmed) != 0 && trimmed != "null" {
 		var cfg struct {
-			Token string `json:"token"`
+			Token       string `json:"token"`
+			LegacyToken string `json:"Token"`
 		}
 		if err := json.Unmarshal([]byte(trimmed), &cfg); err != nil {
 			return "", fmt.Errorf("invalid hcloud target config JSON: %w", err)
 		}
 		if cfg.Token != "" {
 			return cfg.Token, nil
+		}
+		if cfg.LegacyToken != "" {
+			return cfg.LegacyToken, nil
 		}
 	}
 	if token := os.Getenv("HCLOUD_TOKEN"); token != "" {
@@ -426,18 +431,12 @@ func (p *Plugin) Delete(ctx context.Context, req *resource.DeleteRequest) (*reso
 // is generic — all async hcloud ops flow through Actions, so there is no
 // per-handler status method.
 //
-// Status is intentionally action-only: it polls the single hcloud Action and
-// maps its status (running/success/error) onto the formae OperationStatus
-// enum. On the Success transition it does NOT fetch/read the resource, so it
-// does NOT populate ResourceProperties. This is a deliberate trade-off to
-// keep Status within the agent's PluginOperator timeout (~40s budget): a
-// second read call risks exceeding that budget for the same reason
-// Server.Create avoids a second GetByID (see server.go's "DO NOT ADD A
-// GetByID CALL HERE" comment). The consequence is that the agent issues an
-// extra Read/Sync to obtain observed state after Success. This divergence
-// from the OVH plugin (which reads the resource on Status success) is
-// intentional and documented here; do not change this without also raising
-// the operator timeout or accepting a higher rate of MIA failures.
+// On Success, Status performs a best-effort read-back and attaches
+// ResourceProperties when the resource still exists. This keeps async create
+// and update flows from finishing with empty inventory properties. Read-back
+// failures are not fatal: async delete success legitimately reads as NotFound,
+// and some resources may have short eventual-consistency windows after the
+// action completes.
 func (p *Plugin) Status(ctx context.Context, req *resource.StatusRequest) (*resource.StatusResult, error) {
 	client, err := p.getClient(req.TargetConfig)
 	if err != nil {
@@ -466,7 +465,20 @@ func (p *Plugin) Status(ctx context.Context, req *resource.StatusRequest) (*reso
 	default:
 		status = resource.OperationStatusInProgress
 	}
-	return &resource.StatusResult{ProgressResult: progress(resource.OperationCheckStatus, status, req.NativeID, req.RequestID)}, nil
+	pr := progress(resource.OperationCheckStatus, status, req.NativeID, req.RequestID)
+	if status == resource.OperationStatusSuccess && req.ResourceType != "" && req.NativeID != "" {
+		if h, ok := handlers[req.ResourceType]; ok {
+			read, err := h.read(ctx, client, &resource.ReadRequest{
+				NativeID:     req.NativeID,
+				ResourceType: req.ResourceType,
+				TargetConfig: req.TargetConfig,
+			})
+			if err == nil && read != nil && read.ErrorCode == "" && read.Properties != "" {
+				pr.ResourceProperties = json.RawMessage(read.Properties)
+			}
+		}
+	}
+	return &resource.StatusResult{ProgressResult: pr}, nil
 }
 
 // List returns the native IDs of all resources of the given type (for

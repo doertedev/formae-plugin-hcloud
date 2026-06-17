@@ -23,7 +23,7 @@ The live and conformance suites are **mutually exclusive** by build tag (see
 make test
 ```
 
-Runs `go test ./...`. These tests live in `plugin/*_test.go` (no build tag)
+Runs `go test ./...`. These tests live in `pkg/*_test.go` (no build tag)
 and exercise each resource handler against in-process fakes of the hcloud
 client. They never touch the network and are safe to run unconditionally.
 This is the only tier run on every edit.
@@ -36,7 +36,7 @@ make test-integration        # backwards-compatible alias for the above
 ```
 
 These are **direct, provider-level smoke tests**. They call the hcloud Go SDK
-straight from `plugin/*_integration_test.go` — they do **not** go through the
+straight from `pkg/*_integration_test.go` — they do **not** go through the
 formae agent or the plugin binary. Their purpose is to confirm the cheapest
 create/read/delete path for each managed resource type works at the API
 level, independent of the plugin contract.
@@ -44,7 +44,7 @@ level, independent of the plugin contract.
 The exact command the target runs:
 
 ```
-go test -tags=integration -run '^TestIntegration_' -count=1 -timeout=20m -v ./plugin/
+go test -tags=integration -run '^TestIntegration_' -count=1 -timeout=20m -v ./pkg/
 ```
 
 ### Safety gates (so a real hcloud account cannot leak)
@@ -86,7 +86,7 @@ conformance SDK: `formae apply` / `inventory` / `extract` / `sync` /
 `destroy`. The harness boots a real formae agent (downloaded via orbital
 unless `FORMAE_BINARY` points at a local binary), discovers the installed
 plugin from `~/.pel/formae/plugins`, and walks the Pkl fixtures in
-`plugin/testdata/`.
+`testdata/`.
 
 The two test functions and their `-run` filters:
 
@@ -143,9 +143,9 @@ conformance run if you want a clean slate.
 
 | File(s) | Build tag | Meaning |
 |---------|-----------|---------|
-| `plugin/*_test.go` | (none) | Always compiled. Mock-only unit tests. |
-| `plugin/*_integration_test.go` | `//go:build integration && !conformance` | Direct live hcloud API smoke tests. Excluded from `go test ./...` and compiled out when `conformance` is set. |
-| `plugin/conformance_test.go` | `//go:build conformance && !integration` | formae conformance harness. Compiled out when `integration` is set. |
+| `pkg/*_test.go` | (none) | Always compiled. Mock-only unit tests. |
+| `pkg/*_integration_test.go` | `//go:build integration && !conformance` | Direct live hcloud API smoke tests. Excluded from `go test ./...` and compiled out when `conformance` is set. |
+| `conformance_test.go` | `//go:build conformance && !integration` | formae conformance harness. Compiled out when `integration` is set. |
 
 The `&& !<other>` half guarantees that even if **both** tags are passed the
 two live suites are never compiled together — they would otherwise both
@@ -153,8 +153,8 @@ define `TestMain` and collide.
 
 ## Conformance fixtures
 
-`plugin/testdata/*.pkl` are **conformance-only** inputs — see
-[`plugin/testdata/README.md`](../plugin/testdata/README.md). The live hcloud
+`testdata/*.pkl` are **conformance-only** inputs — see
+[`testdata/README.md`](../testdata/README.md). The live hcloud
 smoke tests build their inputs inline in Go and never read that directory.
 
 ### `HETZNER::Compute::Image` caveat

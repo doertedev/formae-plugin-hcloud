@@ -2,7 +2,7 @@
 
 The plugin's desired-state surface is defined in [Pkl](https://pkl-lang.org/)
 under `schema/pkl/`. The formae agent evaluates a user's `forma` file against
-this schema, the plugin's Go handlers in `plugin/` act on the resolved state,
+this schema, the plugin's Go handlers in `pkg/` act on the resolved state,
 and the schema's hint annotations tell formae how to treat each field and
 resource.
 
@@ -58,11 +58,9 @@ module hcloud
 import "@formae/formae.pkl"
 
 open class Config {
-  hidden fixed type: String = "HETZNER"
+  fixed type: String = "HETZNER"
   @formae.ConfigFieldHint { createOnly = true }
-  hidden token: String
-  fixed Type: String = type
-  fixed Token: String = token
+  token: String
 }
 
 class FieldHint extends formae.FieldHint {}
@@ -72,10 +70,9 @@ class ResourceHint extends formae.ResourceHint {
 }
 ```
 
-- **`Config`** is the target config schema. `token` is `createOnly` and
-  `hidden` — it never appears in resolved desired state but is read by the
-  plugin (see [development.md](development.md#environment-variables) for the
-  resolution precedence).
+- **`Config`** is the target config schema. `token` is `createOnly` and is
+  read by the plugin (see [development.md](development.md#environment-variables)
+  for the resolution precedence).
 - **`FieldHint`** extends `formae.FieldHint` so resource schemas can use the
   shorter `@hcloud.FieldHint` import alias.
 - **`ResourceHint`** extends `formae.ResourceHint` and pins
@@ -110,7 +107,7 @@ attributes:
 
 | Attribute | Example | Effect |
 |-----------|---------|--------|
-| `type` | `"HETZNER::Compute::Server"` | The fully-qualified resource type the handler is registered under. Must match the `register(...)` call in `plugin/<type>.go`. |
+| `type` | `"HETZNER::Compute::Server"` | The fully-qualified resource type the handler is registered under. Must match the `register(...)` call in `pkg/<type>.go`. |
 | `identifier` | `"id"` | The field formae uses as the stable primary identifier. |
 | `portable` | `true` | Whether the resource can be imported/extracted across stacks. |
 | `extractable` | `false` (default override) | Whether `formae extract` is enabled for this type. |
@@ -130,11 +127,11 @@ flow — see [packaging.md](packaging.md).
 
 ## Test fixtures
 
-`plugin/testdata/*.pkl` are the conformance harness inputs — one fixture per
+`testdata/*.pkl` are the conformance harness inputs — one fixture per
 managed resource type, each declaring the cheapest possible resource so the
 harness can exercise the full plugin contract (create / read / update /
 delete / inventory / sync / extract). They source shared config (stack,
-target, run-scoped IDs) from `plugin/testdata/config/`.
+target, run-scoped IDs) from `testdata/config/`.
 
 These are **conformance-only** inputs:
 
@@ -143,7 +140,7 @@ These are **conformance-only** inputs:
 - They are **not** golden/canned responses for unit tests either — the mock
   unit tests construct inputs in Go as well.
 
-See [`plugin/testdata/README.md`](../plugin/testdata/README.md) for the
+See [`testdata/README.md`](../testdata/README.md) for the
 fixture contract.
 
 ## Validating the schema locally

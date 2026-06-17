@@ -44,7 +44,7 @@ help: ## List available targets with their descriptions
 
 build: ## Build the plugin binary into ./bin/
 	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/$(BINARY_NAME) ./plugin
+	go build -o $(BIN_DIR)/$(BINARY_NAME) ./pkg
 
 install: check-pkl build ## Install the plugin into ~/.pel/formae/plugins/<name>/v<version>/ (versioned layout required by the formae agent's plugin discovery)
 	@# Remove any prior install of this plugin name AND the legacy flat HETZNER/
@@ -104,7 +104,7 @@ test: ## Run go tests (mock-only; never hits the real hcloud API)
 	go test ./...
 
 # test-live-hcloud runs the DIRECT LIVE HCLOUD API SMOKE TESTS in
-# plugin/*_integration_test.go (build tag `integration`). These call the hcloud
+# pkg/*_integration_test.go (build tag `integration`). These call the hcloud
 # Go SDK directly — they do NOT go through the formae agent or the plugin
 # binary, and are NOT formae conformance tests (those live under the
 # `conformance` build tag and are run via `make conformance-test-*`).
@@ -128,7 +128,7 @@ test-live-hcloud: ## Run live hcloud API smoke tests directly against the real A
 		exit 1; \
 	fi
 	if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
-	HCLOUD_INTEGRATION=1 go test -tags=integration -run '^TestIntegration_' -count=1 -timeout=20m -v ./plugin/
+	HCLOUD_INTEGRATION=1 go test -tags=integration -run '^TestIntegration_' -count=1 -timeout=20m -v ./pkg/
 
 # test-integration is a backwards-compatible alias for test-live-hcloud.
 # Prefer `make test-live-hcloud` (the name makes it explicit that these are
@@ -193,7 +193,7 @@ tidy: ## Run `go mod tidy`
 # formae conformance SDK: `formae apply` / `inventory` / `extract` / `sync` /
 # `destroy`. The harness boots a real formae agent (downloaded via orbital
 # unless FORMAE_BINARY is set), discovers the plugin binary from
-# ~/.pel/formae/plugins, and walks plugin/testdata/*.pkl for fixtures.
+# ~/.pel/formae/plugins, and walks testdata/*.pkl for fixtures.
 #
 # The plugin MUST be `make install`'d before the tests run, and HCLOUD_TOKEN
 # must be set (setup-credentials enforces the latter). Use the TEST filter
@@ -252,14 +252,14 @@ conformance-test: conformance-test-crud conformance-test-discovery ## Run all co
 conformance-test-crud: install setup-credentials ## Run CRUD lifecycle conformance tests (single-resource filter via TEST=...)
 	@echo "Running CRUD conformance tests..."
 	@FORMAE_TEST_FILTER="$(TEST)" FORMAE_TEST_TYPE=crud $(CONF_ENV) \
-		$(GO) test -tags=conformance -run '^TestPluginConformance$$' -v -timeout $(TEST_TIMEOUT) ./plugin/
+		$(GO) test -tags=conformance -run '^TestPluginConformance$$' -v -timeout $(TEST_TIMEOUT) ./
 
 ## conformance-test-discovery: Run only discovery tests
 ## Usage: make conformance-test-discovery [TEST=ssh-key] [TIMEOUT=30m]
 conformance-test-discovery: install setup-credentials ## Run discovery conformance tests (single-resource filter via TEST=...)
 	@echo "Running discovery conformance tests..."
 	@FORMAE_TEST_FILTER="$(TEST)" FORMAE_TEST_TYPE=discovery $(CONF_ENV) \
-		$(GO) test -tags=conformance -run '^TestPluginDiscovery$$' -v -timeout $(TEST_TIMEOUT) ./plugin/
+		$(GO) test -tags=conformance -run '^TestPluginDiscovery$$' -v -timeout $(TEST_TIMEOUT) ./
 
 # Filter for selecting a single resource type (or comma-separated list).
 TEST ?=

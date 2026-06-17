@@ -55,7 +55,7 @@ automatically. **Never use a production project token.**
 ## Configuration & token behaviour
 
 The plugin resolves its hcloud API token via `resolveToken` in
-[`plugin/plugin.go`](plugin/plugin.go):
+[`pkg/plugin.go`](pkg/plugin.go):
 
 1. A `token` field in the formae target config JSON (`{"token":"..."}`) wins.
 2. Otherwise the `HCLOUD_TOKEN` environment variable is consulted.

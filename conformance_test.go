@@ -7,7 +7,7 @@
 // These tests do NOT call the hcloud API directly. They use the official
 // formae conformance harness
 // (github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests)
-// together with the Pkl fixtures under plugin/testdata/ to drive the real
+// together with the Pkl fixtures under testdata/ to drive the real
 // plugin binary end-to-end through formae apply / inventory / extract / sync /
 // destroy. They verify the plugin CONTRACT (CRUD semantics, action handling,
 // inventory sync, label propagation, discovery) — not raw hcloud API

@@ -11,7 +11,7 @@
     "package://hub.platform.engineering/plugins/hcloud/schema/pkl/hcloud/hcloud@0": {
       "type": "local",
       "uri": "projectpackage://hub.platform.engineering/plugins/hcloud/schema/pkl/hcloud/hcloud@0.1.0",
-      "path": "../../schema/pkl"
+      "path": "../schema/pkl"
     }
   }
 }

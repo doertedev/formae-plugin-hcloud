@@ -20,7 +20,7 @@ runner. The Make targets are the canonical entry points.
 
 ## Environment variables
 
-The plugin resolves its hcloud API token via `plugin/plugin.go::resolveToken`:
+The plugin resolves its hcloud API token via `pkg/plugin.go::resolveToken`:
 
 1. A `token` field in the formae target config JSON (`{"token":"..."}`) wins.
 2. Otherwise the `HCLOUD_TOKEN` environment variable is consulted.
@@ -104,17 +104,17 @@ make conformance-test-crud TEST=ssh-key   # exercise one type end-to-end (real A
 
 ## Adding a resource type
 
-A new resource type drops in without editing `plugin/plugin.go`:
+A new resource type drops in without editing `pkg/plugin.go`:
 
 1. **Schema** — add `schema/pkl/<category>/<type>.pkl` declaring a `Resource`
    subclass annotated with `@hcloud.ResourceHint` and per-field
    `@hcloud.FieldHint`s. See [schema.md](schema.md).
-2. **Handler** — add `plugin/<type>.go` implementing the `resourceHandler`
+2. **Handler** — add `pkg/<type>.go` implementing the `resourceHandler`
    interface (`create`/`read`/`update`/`delete`/`list`) and self-register it
    via `register("HETZNER::...::Type", h)` in an `init()`.
-3. **Tests** — add `plugin/<type>_test.go` (mock-based unit tests) and
-   `plugin/<type>_integration_test.go` (live hcloud smoke, build tag
+3. **Tests** — add `pkg/<type>_test.go` (mock-based unit tests) and
+   `pkg/<type>_integration_test.go` (live hcloud smoke, build tag
    `integration && !conformance`).
-4. **Conformance fixture** — add `plugin/testdata/<type>.pkl` so the
+4. **Conformance fixture** — add `testdata/<type>.pkl` so the
    conformance harness exercises the new type. See [testing.md](testing.md)
    for the conformance fixture contract.

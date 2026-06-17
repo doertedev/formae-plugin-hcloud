@@ -7,7 +7,7 @@
 // These are provider-level smoke tests: they call the hcloud Go SDK directly
 // against a real Hetzner Cloud project to confirm the cheapest create/read/
 // delete path for each managed resource type works at the API level. They are
-// NOT formae conformance tests — conformance tests (plugin/conformance_test.go,
+// NOT formae conformance tests — conformance tests (conformance_test.go,
 // build tag `conformance`) drive the real plugin binary through the official
 // formae conformance harness (formae apply / inventory / extract / sync /
 // destroy) and verify the plugin contract end-to-end. The two suites are

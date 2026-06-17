@@ -167,6 +167,17 @@ func TestResolveToken_ConfigWins(t *testing.T) {
 	}
 }
 
+func TestResolveToken_LegacyFormaeConfigShapeWins(t *testing.T) {
+	t.Setenv("HCLOUD_TOKEN", "envtok")
+	tok, err := resolveToken([]byte(`{"Type":"HETZNER","Token":"cfgtok"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if tok != "cfgtok" {
+		t.Fatalf("expected cfgtok, got %q", tok)
+	}
+}
+
 func TestResolveToken_FallsBackToEnv(t *testing.T) {
 	t.Setenv("HCLOUD_TOKEN", "envtok")
 	cases := []struct {
@@ -390,6 +401,77 @@ func TestStatus_SuccessAction(t *testing.T) {
 	}
 	if s := res.ProgressResult.OperationStatus; s != resource.OperationStatusSuccess {
 		t.Errorf("Status: want Success, got %q", s)
+	}
+}
+
+func TestStatus_SuccessAction_AttachesReadBackProperties(t *testing.T) {
+	api := fakeAPI{
+		action: fakeActionClient{
+			getByID: func(context.Context, int64) (*hcloud.Action, *hcloud.Response, error) {
+				return &hcloud.Action{ID: 7, Status: hcloud.ActionStatusSuccess}, nil, nil
+			},
+		},
+		server: fakeServerClient{
+			getByID: func(context.Context, int64) (*hcloud.Server, *hcloud.Response, error) {
+				return sampleServer(), nil, nil
+			},
+		},
+	}
+	p := newPluginWithClient(api)
+
+	res, err := p.Status(context.Background(), &resource.StatusRequest{
+		NativeID:     "42",
+		RequestID:    "7",
+		ResourceType: ServerResourceType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusSuccess {
+		t.Errorf("Status: want Success, got %q", pr.OperationStatus)
+	}
+	if len(pr.ResourceProperties) == 0 {
+		t.Fatal("expected ResourceProperties from read-back")
+	}
+	var props ServerProperties
+	if err := json.Unmarshal(pr.ResourceProperties, &props); err != nil {
+		t.Fatalf("invalid ResourceProperties JSON: %v", err)
+	}
+	if props.ID != 42 {
+		t.Errorf("ResourceProperties ID: want 42, got %d", props.ID)
+	}
+}
+
+func TestStatus_SuccessAction_ReadBackNotFoundStillSucceeds(t *testing.T) {
+	api := fakeAPI{
+		action: fakeActionClient{
+			getByID: func(context.Context, int64) (*hcloud.Action, *hcloud.Response, error) {
+				return &hcloud.Action{ID: 7, Status: hcloud.ActionStatusSuccess}, nil, nil
+			},
+		},
+		server: fakeServerClient{
+			getByID: func(context.Context, int64) (*hcloud.Server, *hcloud.Response, error) {
+				return nil, nil, nil
+			},
+		},
+	}
+	p := newPluginWithClient(api)
+
+	res, err := p.Status(context.Background(), &resource.StatusRequest{
+		NativeID:     "42",
+		RequestID:    "7",
+		ResourceType: ServerResourceType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusSuccess {
+		t.Errorf("Status: want Success, got %q", pr.OperationStatus)
+	}
+	if len(pr.ResourceProperties) != 0 {
+		t.Errorf("expected empty ResourceProperties on NotFound read-back, got %q", string(pr.ResourceProperties))
 	}
 }
 
