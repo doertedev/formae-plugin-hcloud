@@ -110,7 +110,13 @@ attributes:
 | `type` | `"HETZNER::Compute::Server"` | The fully-qualified resource type the handler is registered under. Must match the `register(...)` call in `pkg/<type>.go`. |
 | `identifier` | `"id"` | The field formae uses as the stable primary identifier. |
 | `portable` | `true` | Whether the resource can be imported/extracted across stacks. |
+| `discoverable` | `false` | Whether unmanaged resources of this type can be discovered into inventory. |
 | `extractable` | `false` (default override) | Whether `formae extract` is enabled for this type. |
+
+`HETZNER::Security::Certificate` sets `discoverable = false` because uploaded
+certificates require `privateKey` for creation, but Hetzner never returns the
+private key on read/list. Discovery would otherwise produce an unmanaged
+resource that cannot satisfy the schema's required write-only input.
 
 ## Extractability caveat
 

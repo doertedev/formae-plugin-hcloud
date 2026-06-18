@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/security/ssh_key.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new ssh_key.SSHKey {
+    label = "ssh-key-\(v.testRunID)"
+    name = "formae-conf-ssh-key-\(v.testRunID)-replaced"
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGqaRhfQJ06Ju2V9pc87JV0HHV0UMNDOigpHdmy2ZG59 formae-conformance-test-replace"
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+      ["phase"] = "replace"
+    }
+  }
+}

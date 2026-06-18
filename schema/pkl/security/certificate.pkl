@@ -31,6 +31,7 @@ open class CertificateResolvable extends formae.Resolvable {
     type = module.type
     identifier = "id"
     portable = true
+    discoverable = false
 }
 open class Certificate extends formae.Resource {
     @hcloud.FieldHint {

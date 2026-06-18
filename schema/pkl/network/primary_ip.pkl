@@ -55,7 +55,7 @@ open class PrimaryIP extends formae.Resource {
     location: String?
 
     @hcloud.FieldHint {
-        createOnly = true
+        hasProviderDefault = true
     }
     autoDelete: Boolean?
 

@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/storage/volume.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new volume.Volume {
+    label = "volume-\(v.testRunID)"
+    name = "formae-conf-volume-\(v.testRunID)-replaced"
+    size = read?("env:HCLOUD_VOLUME_REPLACE_SIZE") ?? 11
+    location = v.location
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+      ["phase"] = "replace"
+    }
+  }
+}

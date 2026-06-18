@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/network/network.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new network.Network {
+    label = "network-\(v.testRunID)"
+    name = "formae-conf-network-\(v.testRunID)-replaced"
+    ipRange = "10.1.0.0/16"
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+      ["phase"] = "replace"
+    }
+  }
+}

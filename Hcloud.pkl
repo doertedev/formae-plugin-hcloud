@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+
+module Hcloud
+
+import "formae:/Config.pkl" as formae
+
+/// Per-plugin agent configuration loaded through the `plugins:/Hcloud.pkl`
+/// resolver by formae's conformance harness.
+open class PluginConfig extends formae.BaseResourcePluginConfig {
+  type: String = "HETZNER"
+
+  pluginConfig: Any?
+}

@@ -408,7 +408,10 @@ func TestFloatingIP_List_Success(t *testing.T) {
 	}
 }
 
-func TestFloatingIP_List_EmptyOnError(t *testing.T) {
+func TestFloatingIP_List_PropagatesError(t *testing.T) {
+	// Discovery errors must be surfaced, not hidden as empty lists —
+	// otherwise an invalid token or a 5xx during discovery looks like "no
+	// resources" to the drift workflow.
 	api := fakeAPI{floatingIP: fakeFloatingIPClient{
 		all: func(context.Context) ([]*hcloud.FloatingIP, error) {
 			return nil, errors.New("unavailable")
@@ -417,11 +420,11 @@ func TestFloatingIP_List_EmptyOnError(t *testing.T) {
 	p := newPluginWithClient(api)
 
 	res, err := p.List(context.Background(), &resource.ListRequest{ResourceType: FloatingIPResourceType})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err == nil {
+		t.Fatalf("expected error from List on API failure, got nil (result=%+v)", res)
 	}
-	if len(res.NativeIDs) != 0 {
-		t.Errorf("expected empty list on API error, got %v", res.NativeIDs)
+	if res != nil {
+		t.Errorf("expected nil result on error, got %+v", res)
 	}
 }
 

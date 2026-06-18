@@ -309,6 +309,11 @@ func mapHcloudError(err error) resource.OperationErrorCode {
 		return resource.OperationErrorCodeServiceLimitExceeded
 	case hcloud.IsError(err, hcloud.ErrorCodeTimeout):
 		return resource.OperationErrorCodeServiceTimeout
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		// Chain-level aggregate deadlines (e.g. the LB attach/reconcile bound)
+		// surface as a service-side timeout so the agent backs off rather than
+		// treating it as an internal plugin failure.
+		return resource.OperationErrorCodeServiceTimeout
 	default:
 		// Unknown/unmapped hcloud errors and plain non-hcloud errors (e.g.
 		// transient network blips surfaced as errors.New) are treated as
@@ -482,29 +487,38 @@ func (p *Plugin) Status(ctx context.Context, req *resource.StatusRequest) (*reso
 }
 
 // List returns the native IDs of all resources of the given type (for
-// discovery). Discovery is intentionally resilient: per-type list errors and
-// client-resolution failures are logged as warnings and returned as an empty
-// list, so a single failing type or token (invalid, permission-denied,
-// transient API blip) does NOT abort overall discovery across all resource
-// types. Callers MUST NOT interpret an empty list as definitive "no resources
-// exist" — a Sync/Read on the desired resource is authoritative. Without this
-// contract, an invalid token or a single 5xx would silently look like "no
-// resources" during discovery.
+// discovery). Errors are surfaced, not hidden: an invalid token, a
+// permission-denied, or a 5xx is returned to the caller so discovery /
+// drift workflows can distinguish "no resources exist" from "the plugin
+// could not enumerate resources". Returning an empty list on error would
+// silently look like "no resources" — exactly the failure mode the formae
+// agent uses to decide whether a resource is unmanaged, so masking the
+// error would mask drift.
+//
+// The one exception is an unsupported resource type: the formae agent
+// fans out List across every registered type, and a plugin that does not
+// handle a given type legitimately has nothing to enumerate. That path
+// stays an empty-list-with-log so the agent's fan-out can complete.
 func (p *Plugin) List(ctx context.Context, req *resource.ListRequest) (*resource.ListResult, error) {
 	client, err := p.getClient(req.TargetConfig)
 	if err != nil {
-		log.Printf("formae-plugin-hcloud: list discovery for %q skipped: client resolution failed: %v", req.ResourceType, err)
-		return &resource.ListResult{NativeIDs: []string{}}, nil
+		log.Printf("formae-plugin-hcloud: list discovery for %q failed: client resolution failed: %v", req.ResourceType, err)
+		return nil, fmt.Errorf("list %q: %w", req.ResourceType, err)
 	}
 	h, ok := handlers[req.ResourceType]
 	if !ok {
+		// The formae agent fans out List across every registered resource
+		// type; types this plugin does not handle legitimately enumerate
+		// as empty. Surface this as an empty list (not an error) so the
+		// fan-out completes, but log loudly so an unintended type is
+		// visible.
 		log.Printf("formae-plugin-hcloud: list discovery for %q skipped: unsupported resource type", req.ResourceType)
 		return &resource.ListResult{NativeIDs: []string{}}, nil
 	}
 	result, err := h.list(ctx, client, req)
 	if err != nil {
-		log.Printf("formae-plugin-hcloud: list discovery for %q returned an error (returning empty): %v", req.ResourceType, err)
-		return &resource.ListResult{NativeIDs: []string{}}, nil
+		log.Printf("formae-plugin-hcloud: list discovery for %q failed: %v", req.ResourceType, err)
+		return nil, fmt.Errorf("list %q: %w", req.ResourceType, err)
 	}
 	if result != nil {
 		return result, nil

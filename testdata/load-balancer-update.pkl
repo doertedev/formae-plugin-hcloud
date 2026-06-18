@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/network/load_balancer.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new load_balancer.LoadBalancer {
+    label = "load-balancer-\(v.testRunID)"
+    name = "formae-conf-load-balancer-\(v.testRunID)-updated"
+    loadBalancerType = read?("env:HCLOUD_LB_TYPE") ?? "lb11"
+    location = v.location
+    algorithm = "round_robin"
+    services = new Listing {
+      new load_balancer.LoadBalancerService {
+        protocol = "tcp"
+        listenPort = 8080
+        destinationPort = 8080
+      }
+    }
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+      ["phase"] = "update"
+    }
+  }
+}

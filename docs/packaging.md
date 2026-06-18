@@ -55,29 +55,53 @@ All commands are Make targets; see `make help` for the full list.
 | Target | Requires | What it does |
 |--------|----------|--------------|
 | `make build` | Go | Compiles `./bin/formae-plugin-hcloud`. |
-| `make dist` | Go | Stages `dist/pel/{bin,plugins/HETZNER/...}` for packaging. |
+| `make dist` | Go | Stages `dist/pel/plugins/hcloud/v<version>/...` (mirrors `install`'s versioned discovery layout) for packaging. |
 | `make pkg` | Go + pel/orbital `ops` | Builds `bin/formae-plugin-hcloud-<version>.opkg` from `dist/pel`. |
 | `make publish` | Go + pel `ops` + registry creds | Publishes the `.opkg` to repo `pel`, channel `$(CHANNEL)`. |
 
 ### What gets packaged (`dist/pel`)
 
-`make dist` mirrors the `install` target into `dist/pel`:
+`make dist` mirrors the `install` target's versioned plugin-discovery
+layout into `dist/pel`:
 
 ```
 dist/pel/
-├── bin/
-│   └── formae-plugin-hcloud
 └── plugins/
-    └── HETZNER/
-        ├── formae-plugin.pkl
-        └── schema/
-            └── pkl/
-                ├── PklProject
-                ├── VERSION
-                ├── hcloud.pkl
-                └── compute/
-                    └── server.pkl   (and the rest of schema/pkl/)
+    ├── Hcloud.pkl                            ← root resolver file (plugins:/Hcloud.pkl)
+    └── hcloud/
+        └── v0.1.0/                           ← versioned (matches INSTALL_DIR)
+            ├── Hcloud.pkl                    ← per-plugin resolver copy
+            ├── formae-plugin.pkl             ← manifest
+            ├── hcloud                        ← plugin binary, named exactly <name>
+            └── schema/
+                └── pkl/
+                    ├── PklProject
+                    ├── PklProject.deps.json
+                    ├── VERSION
+                    ├── hcloud.pkl
+                    ├── compute/
+                    │   ├── image.pkl
+                    │   ├── placement_group.pkl
+                    │   └── server.pkl
+                    ├── network/
+                    │   ├── floating_ip.pkl
+                    │   ├── load_balancer.pkl
+                    │   ├── network.pkl
+                    │   └── primary_ip.pkl
+                    ├── security/
+                    │   ├── certificate.pkl
+                    │   ├── firewall.pkl
+                    │   └── ssh_key.pkl
+                    └── storage/
+                        └── volume.pkl
 ```
+
+The versioned layout is required: the formae agent's plugin discovery
+walks `<PLUGINS_DIR>/<name>/v<semver>/<name>` and refuses to register the
+plugin otherwise (see `Makefile` header for the contract). The earlier
+`plugins/HETZNER/...` shape this target produced was silently
+undiscoverable after package install even though `make install` worked
+locally.
 
 `ops opkg build --target-path dist/pel` walks this tree and packages it. The
 resulting manifest carries:
@@ -87,7 +111,7 @@ resulting manifest carries:
 | `display:kind` | `plugin` | Plugin manager classifies the package on this. |
 | `display:category` | `cloud` | UI filter tag. |
 | `plugin:type` | `resource` | Resource plugin (vs auth). |
-| `plugin:namespace` | `hcloud` | Maps to the `HETZNER` resource-type prefix. |
+| `plugin:namespace` | `HETZNER` | Maps to the `HETZNER::` resource-type prefix. The plugin name (`hcloud`) is the on-disk directory name; the namespace is the resource-type prefix. |
 
 All package identity/metadata is derived from `formae-plugin.pkl` via the
 `Opkgfile` (name, version, license, summary, description, namespace), so the

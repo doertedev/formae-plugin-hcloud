@@ -59,6 +59,24 @@ open class LoadBalancer extends formae.Resource {
     @hcloud.FieldHint { hasProviderDefault = true }
     labels: Mapping<String, String>?
 
+    /// Services (listeners) declared on the Load Balancer. Each service is
+    /// keyed by `listenPort` for update-time reconciliation: a service whose
+    /// listenPort exists in the current state is updated in place; new
+    /// listenPorts are added; listenPorts absent from the desired state are
+    /// deleted. Create-time is synchronous: the handler waits for the LB
+    /// create action to settle, then adds each service in turn.
+    @hcloud.FieldHint { hasProviderDefault = true }
+    services: Listing<LoadBalancerService>?
+
+    /// Backends the Load Balancer forwards to. Reconciled at update time by
+    /// target identity: `server` targets are keyed by `serverId`,
+    /// `label_selector` by `selector`, and `ip` by `ip`. Targets present in
+    /// the current state but absent from the desired state are removed; new
+    /// targets are added. `usePrivateIP` changes for an existing target
+    /// identity are reconciled by detaching and re-attaching the target.
+    @hcloud.FieldHint
+    targets: Listing<LoadBalancerTarget>?
+
     @hcloud.FieldHint { hasProviderDefault = true }
     id: Int?
 
@@ -74,4 +92,80 @@ open class LoadBalancer extends formae.Resource {
         label = parent.label
         stack = parent.stack?.label
     }
+}
+
+/// LoadBalancerService is a single listener on the Load Balancer. ListenPort
+/// is the unique key for the service (it cannot collide across services on
+/// the same LB). DestinationPort is required even though hcloud can default it
+/// to ListenPort; keeping it explicit makes desired and observed state stable
+/// without relying on nested provider-default metadata.
+class LoadBalancerService {
+    protocol: ("tcp"|"http"|"https")
+    listenPort: Int
+    destinationPort: Int
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    proxyProtocol: Boolean?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    http: LoadBalancerServiceHTTP?
+
+    healthCheck: LoadBalancerServiceHealthCheck?
+}
+
+/// LoadBalancerServiceHTTP holds HTTP/HTTPS-specific options. Required for
+/// `protocol = "http"` or `"https"`. CertificateIDs reference managed or
+/// uploaded hcloud Certificates by their numeric ID — the plugin does not
+/// resolve certificate names. Duration strings use the same format as Go's
+/// `time.ParseDuration` (e.g. `"30s"`, `"1h"`, `"1h30m"`).
+class LoadBalancerServiceHTTP {
+    cookieName: String?
+    cookieLifetime: String?
+    certificateIds: Listing<Int>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    redirectHTTP: Boolean?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    stickySessions: Boolean?
+
+    timeoutIdle: String?
+}
+
+/// LoadBalancerServiceHealthCheck configures the service's health check. The
+/// hcloud API requires Protocol; Port defaults to the service's
+/// DestinationPort when omitted. Durations are Go `time.ParseDuration`
+/// strings.
+class LoadBalancerServiceHealthCheck {
+    protocol: ("tcp"|"http"|"https"|"grpc")
+    port: Int?
+    interval: String?
+    timeout: String?
+    retries: Int?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    http: LoadBalancerServiceHealthCheckHTTP?
+}
+
+/// LoadBalancerServiceHealthCheckHTTP holds HTTP-specific health check
+/// options. Required when the parent health check's Protocol is "http".
+class LoadBalancerServiceHealthCheckHTTP {
+    domain: String?
+    path: String?
+    response: String?
+    statusCodes: Listing<String>?
+
+    @hcloud.FieldHint { hasProviderDefault = true }
+    tls: Boolean?
+}
+
+/// LoadBalancerTarget is a single backend. Exactly one of `serverId`,
+/// `selector`, or `ip` must be set, matching the value of `type`.
+/// `usePrivateIP` is only valid for `server` and `label_selector` targets.
+class LoadBalancerTarget {
+    type: ("server"|"label_selector"|"ip")
+    serverId: Int?
+    selector: String?
+    ip: String?
+    usePrivateIP: Boolean?
 }

@@ -122,11 +122,13 @@ make pkg-pkl     # pkl project package schema/pkl -> .out/
   empty/omitted string fields are treated as "no change" rather than "clear".
   Omit the field to leave it untouched; clear it out-of-band if required.
   `createOnly` fields are not updatable at all.
-- **Discovery is resilient, not authoritative.** `List` returns an empty
-  result (with a logged warning) on client-resolution failures and per-type
-  API errors, so a single failing type/token does not abort overall
-  discovery. An empty list during discovery therefore does **not** definitively
-  mean "no resources exist"; a subsequent `Sync`/`Read` is authoritative.
+- **Discovery surfaces errors, not empty lists.** `List` returns the
+  underlying error on client-resolution failures (e.g. invalid token) and
+  per-type API errors, so the drift workflow can distinguish "no resources
+  exist" from "the plugin could not enumerate resources". The one exception
+  is an unsupported resource type, which yields an empty list (the formae
+  agent fans `List` out across every registered type and types this plugin
+  does not handle legitimately enumerate as empty).
 - **`extractable = false` by default.** The schema package is not yet
   published to the registry, so `formae extract` is disabled until it is. See
   [docs/schema.md](docs/schema.md#extractability-caveat).

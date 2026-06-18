@@ -12,6 +12,12 @@ DIST_DIR     := dist/pel
 PKL             ?= pkl
 PKL_MIN_VERSION ?= 0.30.0
 
+# formae CLI overrides. `FORMAE` must resolve to the formae CLI. Required
+# only by pkl-eval (for the agent-driven Hcloud.PluginConfig validation
+# path) and the conformance tests; override per-invocation:
+#   make pkl-eval FORMAE=/opt/pel/bin/formae
+FORMAE ?= formae
+
 # Plugin metadata, read from formae-plugin.pkl so this stays in sync with the
 # manifest. The formae agent's plugin discovery (see
 # pkg/plugin/discovery/discovery.go::DiscoverPlugins) REQUIRES a versioned
@@ -55,15 +61,28 @@ install: check-pkl build ## Install the plugin into ~/.pel/formae/plugins/<name>
 	@cp $(BIN_DIR)/$(BINARY_NAME) $(INSTALL_DIR)/$(PLUGIN_NAME)
 	@cp formae-plugin.pkl $(INSTALL_DIR)/formae-plugin.pkl
 	@cp -R schema/pkl/* $(INSTALL_DIR)/schema/pkl/
+	@cp Hcloud.pkl $(INSTALL_DIR)/Hcloud.pkl
+	@cp Hcloud.pkl $(PLUGINS_DIR)/Hcloud.pkl
 	@echo "Installed $(PLUGIN_NAME) v$(PLUGIN_VERSION) -> $(INSTALL_DIR)"
 
-dist: build ## Stage the installable tree into dist/pel/ (binary + manifest + schema) for packaging
+# DIST_INSTALL_DIR mirrors INSTALL_DIR exactly (the versioned plugin-discovery
+# layout) so an .opkg built from dist/pel produces a tree the formae agent's
+# discovery can resolve — same paths as `make install`, just under dist/pel.
+# The legacy unversioned plugins/HETZNER/ layout was silently undiscoverable
+# after install because the agent walks <PLUGINS_DIR>/<name>/v<semver>/.
+DIST_INSTALL_DIR := $(DIST_DIR)/plugins/$(PLUGIN_NAME)/v$(PLUGIN_VERSION)
+
+dist: check-pkl build ## Stage the installable tree into dist/pel/ (mirrors `install`'s versioned discovery layout) for packaging
 	@rm -rf dist
-	@mkdir -p $(DIST_DIR)/bin $(DIST_DIR)/plugins/HETZNER
-	@cp $(BIN_DIR)/$(BINARY_NAME) $(DIST_DIR)/bin/$(BINARY_NAME)
-	@cp formae-plugin.pkl $(DIST_DIR)/plugins/HETZNER/formae-plugin.pkl
-	@cp -R schema $(DIST_DIR)/plugins/HETZNER/schema
-	@echo "Staged installable tree -> $(DIST_DIR)"
+	@mkdir -p $(DIST_INSTALL_DIR)/schema/pkl
+	@# Versioned plugin layout (matches INSTALL_DIR / the discovery contract):
+	@cp $(BIN_DIR)/$(BINARY_NAME) $(DIST_INSTALL_DIR)/$(PLUGIN_NAME)
+	@cp formae-plugin.pkl $(DIST_INSTALL_DIR)/formae-plugin.pkl
+	@cp -R schema/pkl/* $(DIST_INSTALL_DIR)/schema/pkl/
+	@cp Hcloud.pkl $(DIST_INSTALL_DIR)/Hcloud.pkl
+	@# Root-level resolver file consumed by the plugins:/Hcloud.pkl lookup:
+	@cp Hcloud.pkl $(DIST_DIR)/plugins/Hcloud.pkl
+	@echo "Staged installable tree -> $(DIST_INSTALL_DIR)"
 
 check-ops: ## Verify $(OPS) is the pel/orbital ops (NOT the Nanos/microvm ops at ~/.ops/bin/ops)
 	@command -v $(OPS) >/dev/null 2>&1 || { \
@@ -169,12 +188,94 @@ check-pkl: ## Verify $(PKL) is installed and reports version >= $(PKL_MIN_VERSIO
 	fi; \
 	echo "Pkl $$cur (>= $(PKL_MIN_VERSION)) OK"
 
-pkl-eval: check-pkl ## Validate Pkl files evaluate (formae-plugin.pkl and all schema/pkl/**/*.pkl)
+pkl-eval: check-pkl pkl-eval-agent-config ## Validate Pkl files evaluate (formae-plugin.pkl, all schema/pkl/**/*.pkl, and the agent-driven Hcloud.PluginConfig path)
 	$(PKL) eval -f json formae-plugin.pkl >/dev/null
+	@# Hcloud.pkl imports the agent-only `formae:/Config.pkl` resolver, so it
+	@# cannot be evaled standalone by the pkl CLI; pkl-eval-agent-config
+	@# (above) drives the formae agent to validate it end-to-end.
 	@for f in $$(find schema/pkl -type f -name '*.pkl' ! -name '_*'); do \
 		echo "$(PKL) eval -f json --project-dir schema/pkl $$f"; \
 		$(PKL) eval -f json --project-dir schema/pkl "$$f" >/dev/null || exit 1; \
 	done
+
+# pkl-eval-agent-config drives the formae agent to validate Hcloud.pkl
+# through its real consumer: a generated config that does
+# `import "plugins:/Hcloud.pkl" as Hcloud` and instantiates
+# `new Hcloud.PluginConfig {}` inside `agent.resourcePlugins`. The formae:
+# and plugins: module schemes are resolvable ONLY by the formae agent, so
+# the pkl CLI alone cannot catch regressions in Hcloud.pkl's class shape
+# (a previous conformance config failure came from exactly this gap).
+#
+# Robustness (the check asserts a POSITIVE readiness signal, not just the
+# absence of "Pkl Error"): the agent is started against a temp plugin dir
+# (so the user's real ~/.pel/formae/plugins is never mutated by a validation
+# target) and the recipe polls the agent log for the HETZNER plugin
+# registration line — the same handshake that proves Hcloud.PluginConfig
+# parsed AND the plugin's schema advertised its resources. An agent that
+# exits before registering (wrong subcommand, bad flag, bind failure, early
+# crash, or a PKL parse error that does not happen to print "Pkl Error")
+# fails the check loudly with the full log. Skipped (with a warning) when
+# $(FORMAE) is not on PATH so `make pkl-eval` still works in environments
+# without the formae toolchain.
+.PHONY: pkl-eval-agent-config
+pkl-eval-agent-config: check-pkl build
+	@if ! command -v $(FORMAE) >/dev/null 2>&1; then \
+		echo "Warning: '$(FORMAE)' not found on PATH; skipping agent-driven Hcloud.PluginConfig validation."; \
+		echo "Install formae and re-run to exercise the full Hcloud.pkl integration path."; \
+	else \
+		tmpdir=$$(mktemp -d); \
+		plugins_dir=$$tmpdir/plugins; \
+		config=$$tmpdir/validate-hcloud-config.pkl; \
+		$(MAKE) --no-print-directory install PLUGINS_DIR=$$plugins_dir >/dev/null; \
+		printf '%s\n' \
+			'amends "formae:/Config.pkl"' \
+			'import "plugins:/Hcloud.pkl" as Hcloud' \
+			'pluginDir = "'$$plugins_dir'"' \
+			'agent {' \
+			'    server { port = 0; secret = "pkl-eval-agent-config"; nodename = "formae-pkl-eval-hcloud" }' \
+			'    datastore { sqlite { filePath = "'$$tmpdir'/validate.sqlite" } }' \
+			'    synchronization { enabled = false }' \
+			'    discovery { enabled = false }' \
+			'    logging { consoleLogLevel = "info" }' \
+			'    resourcePlugins {' \
+			'        new Hcloud.PluginConfig {}' \
+			'    }' \
+			'}' \
+			'cli { api { port = 0 }; disableUsageReporting = true }' \
+			> $$config; \
+		echo "Validating Hcloud.PluginConfig via $(FORMAE) agent start (temp plugin dir: $$plugins_dir) ..."; \
+		$(FORMAE) agent start --config $$config > $$tmpdir/agent.log 2>&1 & \
+		agent_pid=$$!; \
+		ready=0; \
+		for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+			if ! kill -0 $$agent_pid 2>/dev/null; then \
+				break; \
+			fi; \
+			if grep -qE 'Plugin registered.*namespace=HETZNER|Spawned plugin namespace=HETZNER' $$tmpdir/agent.log 2>/dev/null; then \
+				ready=1; \
+				break; \
+			fi; \
+			sleep 0.5; \
+		done; \
+		kill -TERM $$agent_pid 2>/dev/null || true; \
+		wait $$agent_pid 2>/dev/null || true; \
+		if grep -q 'Pkl Error' $$tmpdir/agent.log; then \
+			echo "ERROR: Hcloud.PluginConfig failed to evaluate under the formae agent (Pkl Error in log):"; \
+			cat $$tmpdir/agent.log; \
+			rm -rf $$tmpdir; \
+			exit 1; \
+		fi; \
+		if [ $$ready -ne 1 ]; then \
+			echo "ERROR: HETZNER plugin did not register under the formae agent within the readiness window."; \
+			echo "       This catches wrong subcommands, bad flags, early process exit, bind/config failures,"; \
+			echo "       and PKL parse errors that do not print 'Pkl Error'. Full agent log:"; \
+			cat $$tmpdir/agent.log; \
+			rm -rf $$tmpdir; \
+			exit 1; \
+		fi; \
+		echo "Hcloud.PluginConfig loaded cleanly: HETZNER plugin registered under the formae agent."; \
+		rm -rf $$tmpdir; \
+	fi
 
 pkg-pkl: check-pkl ## Package the Pkl schema into a .zip via `pkl project package` (output goes to .out/)
 	$(PKL) project package schema/pkl --skip-publish-check

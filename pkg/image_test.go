@@ -587,7 +587,10 @@ func TestImage_List_FiltersSnapshots(t *testing.T) {
 	}
 }
 
-func TestImage_List_EmptyOnError(t *testing.T) {
+func TestImage_List_PropagatesError(t *testing.T) {
+	// Discovery errors must be surfaced, not hidden as empty lists —
+	// otherwise an invalid token or a 5xx during discovery looks like "no
+	// resources" to the drift workflow.
 	api := fakeAPI{image: fakeImageClient{
 		all: func(context.Context) ([]*hcloud.Image, error) {
 			return nil, errors.New("unavailable")
@@ -596,10 +599,10 @@ func TestImage_List_EmptyOnError(t *testing.T) {
 	p := newPluginWithClient(api)
 
 	res, err := p.List(context.Background(), &resource.ListRequest{ResourceType: ImageResourceType})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err == nil {
+		t.Fatalf("expected error from List on API failure, got nil (result=%+v)", res)
 	}
-	if len(res.NativeIDs) != 0 {
-		t.Errorf("expected empty list on API error, got %v", res.NativeIDs)
+	if res != nil {
+		t.Errorf("expected nil result on error, got %+v", res)
 	}
 }

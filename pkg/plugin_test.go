@@ -274,8 +274,10 @@ func TestCreate_UnknownResourceType(t *testing.T) {
 	}
 }
 
-// TestList_UnknownResourceType verifies an unknown type yields an empty
-// NativeIDs slice (not an error), matching the existing List contract.
+// TestList_UnknownResourceType verifies that an unknown type yields an
+// empty NativeIDs slice (not an error). The formae agent fans List out
+// across every registered type; types this plugin does not handle
+// legitimately enumerate as empty so the fan-out completes.
 func TestList_UnknownResourceType(t *testing.T) {
 	p := newPluginWithClient(fakeAPI{})
 	res, err := p.List(context.Background(), &resource.ListRequest{
@@ -355,16 +357,18 @@ func TestDelete_NoToken(t *testing.T) {
 	}
 }
 
-func TestList_EmptyOnNoToken(t *testing.T) {
+func TestList_PropagatesNoTokenError(t *testing.T) {
+	// A missing/invalid token must surface as a discovery error, not be
+	// hidden as an empty list.
 	t.Setenv("HCLOUD_TOKEN", "")
 	p := &Plugin{}
 
 	res, err := p.List(context.Background(), &resource.ListRequest{ResourceType: ServerResourceType})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err == nil {
+		t.Fatalf("expected error from List when no token is configured, got nil (result=%+v)", res)
 	}
-	if len(res.NativeIDs) != 0 {
-		t.Errorf("expected empty list when no token is configured, got %v", res.NativeIDs)
+	if res != nil {
+		t.Errorf("expected nil result on error, got %+v", res)
 	}
 }
 

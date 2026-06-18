@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: Apache-2.0
+
+amends "@formae/forma.pkl"
+
+import "@hcloud/network/floating_ip.pkl"
+
+import "./config/vars.pkl" as v
+
+forma {
+  v.stack
+  v.target
+
+  new floating_ip.FloatingIP {
+    label = "floating-ip-\(v.testRunID)"
+    type = "ipv4"
+    description = "formae conformance test floating ip updated"
+    homeLocation = v.location
+    labels = new Mapping {
+      ["owner"] = "formae-conformance-test"
+      ["phase"] = "update"
+    }
+  }
+}
