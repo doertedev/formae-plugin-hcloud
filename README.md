@@ -151,6 +151,8 @@ make publish   # publish the .opkg to repo pel, channel $(CHANNEL)
   conformance, safety gates, labels, filters, timeouts, cleanup.
 - [docs/schema.md](docs/schema.md) — Pkl schema layout, resources, hints,
   fixtures, extractability.
+- [docs/schema-data-types.md](docs/schema-data-types.md) — copy-pasteable Pkl
+  examples for every schema data shape used by the plugin.
 - [docs/packaging.md](docs/packaging.md) — `.opkg` build/publish flow.
 
 ## License

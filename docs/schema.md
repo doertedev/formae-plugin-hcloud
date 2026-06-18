@@ -50,6 +50,11 @@ eval` so the install layout never drifts from the manifest.
 Each resource schema opens a `formae.Resource` subclass annotated with
 `@hcloud.ResourceHint` and declares its fields with `@hcloud.FieldHint`s.
 
+For copy-pasteable examples of every Pkl data shape used in this repo
+(`String`, `Int`, `Float`, `Boolean`, enums, mappings, listings, nested
+classes, hints, and full resource fragments), see
+[schema-data-types.md](schema-data-types.md).
+
 ## Module root (`hcloud.pkl`)
 
 ```pkl

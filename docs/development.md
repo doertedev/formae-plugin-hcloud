@@ -5,6 +5,18 @@ There is no CI pipeline in this repo (no `.github/workflows/`); everything
 here is run by hand on a developer machine. See [testing.md](testing.md) for
 the test tiers and [packaging.md](packaging.md) for build/publish.
 
+## Guide map
+
+- [schema.md](schema.md) covers the schema layout, resource hints, field hints,
+  conformance fixtures, and extractability caveat.
+- [schema-data-types.md](schema-data-types.md) is the copy-paste reference for
+  Pkl data shapes used by this plugin: scalars, enums, mappings, listings,
+  nested classes, provider-default fields, resolvables, and resource fragments.
+- [testing.md](testing.md) covers unit tests, live hcloud smoke tests, and
+  conformance runs.
+- [packaging.md](packaging.md) covers install, `.opkg` packaging, publishing,
+  and schema package publishing.
+
 ## Prerequisites
 
 | Tool | Version | Why |
@@ -108,7 +120,9 @@ A new resource type drops in without editing `pkg/plugin.go`:
 
 1. **Schema** — add `schema/pkl/<category>/<type>.pkl` declaring a `Resource`
    subclass annotated with `@hcloud.ResourceHint` and per-field
-   `@hcloud.FieldHint`s. See [schema.md](schema.md).
+   `@hcloud.FieldHint`s. See [schema.md](schema.md), and use
+   [schema-data-types.md](schema-data-types.md) for copy-pasteable examples
+   of each Pkl field shape.
 2. **Handler** — add `pkg/<type>.go` implementing the `resourceHandler`
    interface (`create`/`read`/`update`/`delete`/`list`) and self-register it
    via `register("HETZNER::...::Type", h)` in an `init()`.
