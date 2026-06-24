@@ -3,7 +3,7 @@ module github.com/doertedev/formae-plugin-hcloud
 go 1.26.0
 
 require (
-	github.com/hetznercloud/hcloud-go/v2 v2.43.0
+	github.com/hetznercloud/hcloud-go/v2 v2.44.0
 	github.com/platform-engineering-labs/formae/pkg/model v0.1.25
 	github.com/platform-engineering-labs/formae/pkg/plugin v0.3.0
 	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.5
