@@ -46,7 +46,7 @@ jobs:
           model: gpt-5.5
           effort: medium
           sandbox: read-only
-          allow-bots: dependabot[bot]
+          allow-bot-users: dependabot
           prompt: |
             Review this Dependabot pull request as a senior Go maintainer.
 
