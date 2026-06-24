@@ -75,7 +75,7 @@ jobs:
             - Findings
 
       - name: Comment Codex review
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
           CODEX_OUTCOME: ${{ steps.codex.outcome }}
