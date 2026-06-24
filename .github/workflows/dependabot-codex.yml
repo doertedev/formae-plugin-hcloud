@@ -40,6 +40,7 @@ jobs:
 
       - name: Run Codex review
         id: codex
+        continue-on-error: true
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -77,10 +78,13 @@ jobs:
         uses: actions/github-script@v7
         env:
           CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+          CODEX_OUTCOME: ${{ steps.codex.outcome }}
         with:
           github-token: ${{ github.token }}
           script: |
-            const body = process.env.CODEX_FINAL_MESSAGE || "Codex review produced no output.";
+            const body = process.env.CODEX_OUTCOME === "success"
+              ? (process.env.CODEX_FINAL_MESSAGE || "Codex review produced no output.")
+              : "Codex review did not complete. Check the workflow logs; common causes are inactive OpenAI API billing, an invalid `OPENAI_API_KEY`, or temporary API availability.";
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
