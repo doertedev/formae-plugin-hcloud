@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-BINARY_NAME  := formae-plugin-hcloud
+BINARY_NAME  := $(PLUGIN_NAME)
 BIN_DIR      := bin
 OUT_DIR      := .out
 DIST_DIR     := dist/pel
