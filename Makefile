@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-BINARY_NAME  := $(PLUGIN_NAME)
+BINARY_NAME  := "hcloud"
 BIN_DIR      := bin
 OUT_DIR      := .out
 DIST_DIR     := dist/pel
