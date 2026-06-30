@@ -18,7 +18,8 @@ import "./formae-plugin.pkl" as plugin
 // at install/discovery time.
 name        = plugin.name
 version     = semver.Version(plugin.version)
-publisher   = "platform.engineering"
+publisher   = read("env:OPS_PUBLISHER")
+originator  = read("env:OPS_ORIGINATOR")
 license     = plugin.license
 summary     = if (plugin.hasProperty("summary")) plugin.summary else plugin.name
 description = if (plugin.hasProperty("description")) plugin.description else plugin.summary
