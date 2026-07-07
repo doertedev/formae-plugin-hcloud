@@ -72,6 +72,119 @@ func TestCreate_InProgress_WithAction(t *testing.T) {
 	}
 }
 
+func TestCreate_InProgress_DerivesNativeIDFromActionResource(t *testing.T) {
+	api := fakeAPI{server: fakeServerClient{
+		create: func(_ context.Context, opts hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error) {
+			return hcloud.ServerCreateResult{
+				Server: &hcloud.Server{Name: "web-1"},
+				Action: &hcloud.Action{
+					ID: 7,
+					Resources: []*hcloud.ActionResource{
+						{ID: 42, Type: hcloud.ActionResourceTypeServer},
+					},
+				},
+			}, nil, nil
+		},
+	}}
+	p := newPluginWithClient(api)
+
+	res, err := p.Create(context.Background(), &resource.CreateRequest{
+		ResourceType: ServerResourceType,
+		Properties:   json.RawMessage(validProps),
+		TargetConfig: json.RawMessage(`{"token":"x"}`),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusInProgress {
+		t.Errorf("status: want InProgress, got %q", pr.OperationStatus)
+	}
+	if pr.NativeID != "42" {
+		t.Errorf("NativeID: want 42 from action resource, got %q", pr.NativeID)
+	}
+	if pr.RequestID != "7" {
+		t.Errorf("RequestID: want 7, got %q", pr.RequestID)
+	}
+}
+
+func TestCreate_InProgress_DerivesNativeIDFromServerNameFallback(t *testing.T) {
+	api := fakeAPI{server: fakeServerClient{
+		create: func(_ context.Context, opts hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error) {
+			return hcloud.ServerCreateResult{
+				Server: &hcloud.Server{Name: "web-1"},
+				Action: &hcloud.Action{ID: 7},
+			}, nil, nil
+		},
+		getByName: func(_ context.Context, name string) (*hcloud.Server, *hcloud.Response, error) {
+			if name != "web-1" {
+				t.Fatalf("GetByName: want web-1, got %q", name)
+			}
+			return &hcloud.Server{ID: 42, Name: name}, nil, nil
+		},
+	}}
+	p := newPluginWithClient(api)
+
+	res, err := p.Create(context.Background(), &resource.CreateRequest{
+		ResourceType: ServerResourceType,
+		Properties:   json.RawMessage(validProps),
+		TargetConfig: json.RawMessage(`{"token":"x"}`),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusInProgress {
+		t.Errorf("status: want InProgress, got %q", pr.OperationStatus)
+	}
+	if pr.NativeID != "42" {
+		t.Errorf("NativeID: want 42 from name fallback, got %q", pr.NativeID)
+	}
+	if pr.RequestID != "7" {
+		t.Errorf("RequestID: want 7, got %q", pr.RequestID)
+	}
+	var props ServerProperties
+	if err := json.Unmarshal(pr.ResourceProperties, &props); err != nil {
+		t.Fatalf("invalid create-result properties: %v", err)
+	}
+	if props.ID != 42 {
+		t.Errorf("ResourceProperties ID: want 42, got %d", props.ID)
+	}
+}
+
+func TestCreate_InProgress_EncodesServerNameFallbackInRequestID(t *testing.T) {
+	api := fakeAPI{server: fakeServerClient{
+		create: func(_ context.Context, opts hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error) {
+			return hcloud.ServerCreateResult{
+				Server: &hcloud.Server{Name: "web-1"},
+				Action: &hcloud.Action{ID: 7},
+			}, nil, nil
+		},
+	}}
+	p := newPluginWithClient(api)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	res, err := p.Create(ctx, &resource.CreateRequest{
+		ResourceType: ServerResourceType,
+		Properties:   json.RawMessage(validProps),
+		TargetConfig: json.RawMessage(`{"token":"x"}`),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusInProgress {
+		t.Errorf("status: want InProgress, got %q", pr.OperationStatus)
+	}
+	if pr.NativeID != "web-1" {
+		t.Errorf("NativeID: want web-1 fallback, got %q", pr.NativeID)
+	}
+	if pr.RequestID != "7|web-1" {
+		t.Errorf("RequestID: want 7|web-1, got %q", pr.RequestID)
+	}
+}
+
 // TestCreate_Success_WhenNoAction verifies the defensive fallback: if hcloud
 // returns no provisioning Action (treats the create as synchronous, rare), the
 // handler reports Success with the server ID.

@@ -15,7 +15,7 @@ forma {
     name = "formae-conf-server-\(v.testRunID)"
     serverType = read?("env:HCLOUD_SERVER_TYPE") ?? "cx23"
     image = read?("env:HCLOUD_IMAGE") ?? "ubuntu-24.04"
-    location = v.location
+    location = read?("env:HCLOUD_SERVER_LOCATION") ?? "nbg1"
     labels = new Mapping {
       ["owner"] = "formae-conformance-test"
     }

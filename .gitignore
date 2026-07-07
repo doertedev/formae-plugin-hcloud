@@ -8,3 +8,4 @@ bin/
 .opencode/
 .tool-versions
 .env
+.tmp

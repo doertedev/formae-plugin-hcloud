@@ -264,6 +264,36 @@ func fail(op resource.Operation, nativeID, requestID, msg string, code resource.
 	return pr
 }
 
+func nativeIDFromActionResource(action *hcloud.Action, resourceType string) string {
+	if action == nil {
+		return ""
+	}
+	var want hcloud.ActionResourceType
+	switch resourceType {
+	case ServerResourceType:
+		want = hcloud.ActionResourceTypeServer
+	case FloatingIPResourceType:
+		want = hcloud.ActionResourceTypeFloatingIP
+	case VolumeResourceType:
+		want = hcloud.ActionResourceTypeVolume
+	case ImageResourceType:
+		want = hcloud.ActionResourceTypeImage
+	default:
+		return ""
+	}
+	for _, r := range action.Resources {
+		if r != nil && r.Type == want && r.ID != 0 {
+			return strconv.FormatInt(r.ID, 10)
+		}
+	}
+	return ""
+}
+
+func splitStatusRequestID(requestID string) (actionID string, fallbackNativeID string) {
+	actionID, fallbackNativeID, _ = strings.Cut(requestID, "|")
+	return actionID, fallbackNativeID
+}
+
 // --- Shared helpers --------------------------------------------------------
 //
 // The helpers below standardise three things every per-resource handler
@@ -447,7 +477,8 @@ func (p *Plugin) Status(ctx context.Context, req *resource.StatusRequest) (*reso
 	if err != nil {
 		return &resource.StatusResult{ProgressResult: fail(resource.OperationCheckStatus, req.NativeID, req.RequestID, err.Error(), resource.OperationErrorCodeInternalFailure)}, nil
 	}
-	actionID, err := strconv.ParseInt(req.RequestID, 10, 64)
+	actionIDString, fallbackNativeID := splitStatusRequestID(req.RequestID)
+	actionID, err := strconv.ParseInt(actionIDString, 10, 64)
 	if err != nil {
 		return &resource.StatusResult{ProgressResult: fail(resource.OperationCheckStatus, req.NativeID, req.RequestID, "invalid request id", resource.OperationErrorCodeInvalidRequest)}, nil
 	}
@@ -470,11 +501,21 @@ func (p *Plugin) Status(ctx context.Context, req *resource.StatusRequest) (*reso
 	default:
 		status = resource.OperationStatusInProgress
 	}
-	pr := progress(resource.OperationCheckStatus, status, req.NativeID, req.RequestID)
-	if status == resource.OperationStatusSuccess && req.ResourceType != "" && req.NativeID != "" {
+	nativeID := req.NativeID
+	if nativeID == "" {
+		nativeID = nativeIDFromActionResource(action, req.ResourceType)
+	}
+	if nativeID == "" && req.ResourceType == ServerResourceType {
+		nativeID = fallbackNativeID
+	}
+	if nativeID != "" {
+		nativeID = normalizeNativeID(ctx, client, req.ResourceType, nativeID)
+	}
+	pr := progress(resource.OperationCheckStatus, status, nativeID, req.RequestID)
+	if status == resource.OperationStatusSuccess && req.ResourceType != "" && nativeID != "" {
 		if h, ok := handlers[req.ResourceType]; ok {
 			read, err := h.read(ctx, client, &resource.ReadRequest{
-				NativeID:     req.NativeID,
+				NativeID:     nativeID,
 				ResourceType: req.ResourceType,
 				TargetConfig: req.TargetConfig,
 			})
@@ -484,6 +525,20 @@ func (p *Plugin) Status(ctx context.Context, req *resource.StatusRequest) (*reso
 		}
 	}
 	return &resource.StatusResult{ProgressResult: pr}, nil
+}
+
+func normalizeNativeID(ctx context.Context, client hcloudAPI, resourceType, nativeID string) string {
+	if resourceType != ServerResourceType {
+		return nativeID
+	}
+	if _, err := strconv.ParseInt(nativeID, 10, 64); err == nil {
+		return nativeID
+	}
+	server, _, err := client.Server().GetByName(ctx, nativeID)
+	if err != nil || server == nil || server.ID == 0 {
+		return nativeID
+	}
+	return strconv.FormatInt(server.ID, 10)
 }
 
 // List returns the native IDs of all resources of the given type (for

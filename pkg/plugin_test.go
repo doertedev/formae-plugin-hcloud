@@ -34,6 +34,7 @@ type fakeServerClient struct {
 
 	create           func(context.Context, hcloud.ServerCreateOpts) (hcloud.ServerCreateResult, *hcloud.Response, error)
 	getByID          func(context.Context, int64) (*hcloud.Server, *hcloud.Response, error)
+	getByName        func(context.Context, string) (*hcloud.Server, *hcloud.Response, error)
 	update           func(context.Context, *hcloud.Server, hcloud.ServerUpdateOpts) (*hcloud.Server, *hcloud.Response, error)
 	deleteWithResult func(context.Context, *hcloud.Server) (*hcloud.ServerDeleteResult, *hcloud.Response, error)
 	all              func(context.Context) ([]*hcloud.Server, error)
@@ -51,6 +52,13 @@ func (f fakeServerClient) GetByID(ctx context.Context, id int64) (*hcloud.Server
 		return nil, nil, nil
 	}
 	return f.getByID(ctx, id)
+}
+
+func (f fakeServerClient) GetByName(ctx context.Context, name string) (*hcloud.Server, *hcloud.Response, error) {
+	if f.getByName == nil {
+		return nil, nil, nil
+	}
+	return f.getByName(ctx, name)
 }
 
 func (f fakeServerClient) Update(ctx context.Context, s *hcloud.Server, opts hcloud.ServerUpdateOpts) (*hcloud.Server, *hcloud.Response, error) {
@@ -391,6 +399,36 @@ func TestStatus_RunningAction(t *testing.T) {
 	}
 }
 
+func TestStatus_RunningAction_DerivesNativeIDFromActionResource(t *testing.T) {
+	api := fakeAPI{action: fakeActionClient{
+		getByID: func(context.Context, int64) (*hcloud.Action, *hcloud.Response, error) {
+			return &hcloud.Action{
+				ID:     7,
+				Status: hcloud.ActionStatusRunning,
+				Resources: []*hcloud.ActionResource{
+					{ID: 42, Type: hcloud.ActionResourceTypeServer},
+				},
+			}, nil, nil
+		},
+	}}
+	p := newPluginWithClient(api)
+
+	res, err := p.Status(context.Background(), &resource.StatusRequest{
+		RequestID:    "7",
+		ResourceType: ServerResourceType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusInProgress {
+		t.Errorf("Status: want InProgress, got %q", pr.OperationStatus)
+	}
+	if pr.NativeID != "42" {
+		t.Errorf("NativeID: want 42 from action resource, got %q", pr.NativeID)
+	}
+}
+
 func TestStatus_SuccessAction(t *testing.T) {
 	api := fakeAPI{action: fakeActionClient{
 		getByID: func(context.Context, int64) (*hcloud.Action, *hcloud.Response, error) {
@@ -444,6 +482,90 @@ func TestStatus_SuccessAction_AttachesReadBackProperties(t *testing.T) {
 	}
 	if props.ID != 42 {
 		t.Errorf("ResourceProperties ID: want 42, got %d", props.ID)
+	}
+}
+
+func TestStatus_SuccessAction_NormalizesServerNameNativeID(t *testing.T) {
+	api := fakeAPI{
+		action: fakeActionClient{
+			getByID: func(context.Context, int64) (*hcloud.Action, *hcloud.Response, error) {
+				return &hcloud.Action{ID: 7, Status: hcloud.ActionStatusSuccess}, nil, nil
+			},
+		},
+		server: fakeServerClient{
+			getByName: func(_ context.Context, name string) (*hcloud.Server, *hcloud.Response, error) {
+				if name != "web-1" {
+					t.Fatalf("GetByName: want web-1, got %q", name)
+				}
+				return &hcloud.Server{ID: 42, Name: name}, nil, nil
+			},
+			getByID: func(context.Context, int64) (*hcloud.Server, *hcloud.Response, error) {
+				return sampleServer(), nil, nil
+			},
+		},
+	}
+	p := newPluginWithClient(api)
+
+	res, err := p.Status(context.Background(), &resource.StatusRequest{
+		NativeID:     "web-1",
+		RequestID:    "7",
+		ResourceType: ServerResourceType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusSuccess {
+		t.Errorf("Status: want Success, got %q", pr.OperationStatus)
+	}
+	if pr.NativeID != "42" {
+		t.Errorf("NativeID: want normalized 42, got %q", pr.NativeID)
+	}
+	if len(pr.ResourceProperties) == 0 {
+		t.Fatal("expected ResourceProperties from numeric read-back")
+	}
+}
+
+func TestStatus_SuccessAction_UsesServerNameFallbackFromRequestID(t *testing.T) {
+	api := fakeAPI{
+		action: fakeActionClient{
+			getByID: func(_ context.Context, id int64) (*hcloud.Action, *hcloud.Response, error) {
+				if id != 7 {
+					t.Fatalf("GetByID action: want 7, got %d", id)
+				}
+				return &hcloud.Action{ID: 7, Status: hcloud.ActionStatusSuccess}, nil, nil
+			},
+		},
+		server: fakeServerClient{
+			getByName: func(_ context.Context, name string) (*hcloud.Server, *hcloud.Response, error) {
+				if name != "web-1" {
+					t.Fatalf("GetByName: want web-1, got %q", name)
+				}
+				return &hcloud.Server{ID: 42, Name: name}, nil, nil
+			},
+			getByID: func(context.Context, int64) (*hcloud.Server, *hcloud.Response, error) {
+				return sampleServer(), nil, nil
+			},
+		},
+	}
+	p := newPluginWithClient(api)
+
+	res, err := p.Status(context.Background(), &resource.StatusRequest{
+		RequestID:    "7|web-1",
+		ResourceType: ServerResourceType,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	pr := res.ProgressResult
+	if pr.OperationStatus != resource.OperationStatusSuccess {
+		t.Errorf("Status: want Success, got %q", pr.OperationStatus)
+	}
+	if pr.NativeID != "42" {
+		t.Errorf("NativeID: want normalized 42 from request fallback, got %q", pr.NativeID)
+	}
+	if len(pr.ResourceProperties) == 0 {
+		t.Fatal("expected ResourceProperties from numeric read-back")
 	}
 }
 

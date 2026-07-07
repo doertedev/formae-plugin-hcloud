@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/hetznercloud/hcloud-go/v2/hcloud"
 	"github.com/platform-engineering-labs/formae/pkg/plugin/resource"
@@ -105,32 +106,75 @@ func (serverHandler) create(ctx context.Context, c hcloudAPI, req *resource.Crea
 	//
 	// InProgress carries BOTH identifiers so the agent can address the
 	// resource immediately AND poll provisioning to completion:
-	//   - nativeID = res.Server.ID (assigned the instant Create returns; the
-	//     agent preserves it across the InProgress→Success transition — its
-	//     "Setting NativeID from progress" log confirms it reads every
-	//     progress result's NativeID).
+	//   - nativeID = res.Server.ID, or the server resource ID embedded in the
+	//     action if hcloud omits/zeros the top-level create response server.
 	//   - requestID = res.Action.ID (the agent polls Status with this until
-	//     the provisioning action completes).
+	//     the provisioning action completes). Status repeats the action-resource
+	//     fallback so an empty create-time native ID can recover on the next poll.
 	//
 	// ResourceProperties come from the create-response Server. The only field
 	// that may be absent is IPv4 (still allocating), and it is marked
 	// hasProviderDefault in the schema, so the conformance Verify step
 	// tolerates its absence. The next Sync issues a Read that populates IPv4.
-	b, _ := json.Marshal(serverPropertiesFrom(res.Server))
+	var nativeID string
+	if res.Server != nil && res.Server.ID != 0 {
+		nativeID = strconv.FormatInt(res.Server.ID, 10)
+	}
+	if nativeID == "" {
+		nativeID = nativeIDFromActionResource(res.Action, ServerResourceType)
+	}
+	if nativeID == "" {
+		if server, err := lookupServerByNameAfterCreate(ctx, c, props.Name); err == nil && server != nil {
+			res.Server = server
+			nativeID = strconv.FormatInt(server.ID, 10)
+		}
+	}
+	if nativeID == "" && res.Action != nil {
+		nativeID = props.Name
+	}
+	var b json.RawMessage
+	if res.Server != nil {
+		b, _ = json.Marshal(serverPropertiesFrom(res.Server))
+	}
 	if res.Action != nil {
+		requestID := strconv.FormatInt(res.Action.ID, 10)
+		if nativeID == props.Name {
+			requestID = fmt.Sprintf("%s|%s", requestID, props.Name)
+		}
 		pr := progress(
 			resource.OperationCreate, resource.OperationStatusInProgress,
-			strconv.FormatInt(res.Server.ID, 10), // nativeID — set immediately
-			strconv.FormatInt(res.Action.ID, 10), // requestID — for Status polling
+			nativeID,
+			requestID, // requestID — for Status polling
 		)
 		pr.ResourceProperties = b
 		return &resource.CreateResult{ProgressResult: pr}, nil
 	}
 	// Defensive fallback: no Action means hcloud treated the create as
 	// synchronous (rare). Report Success with the server ID.
-	pr := progress(resource.OperationCreate, resource.OperationStatusSuccess, strconv.FormatInt(res.Server.ID, 10), "")
+	if nativeID == "" {
+		return &resource.CreateResult{ProgressResult: fail(resource.OperationCreate, "", "", "server create response missing server id", resource.OperationErrorCodeInternalFailure)}, nil
+	}
+	pr := progress(resource.OperationCreate, resource.OperationStatusSuccess, nativeID, "")
 	pr.ResourceProperties = b
 	return &resource.CreateResult{ProgressResult: pr}, nil
+}
+
+func lookupServerByNameAfterCreate(ctx context.Context, c hcloudAPI, name string) (*hcloud.Server, error) {
+	var lastErr error
+	for i := 0; i < 5; i++ {
+		server, _, err := c.Server().GetByName(ctx, name)
+		if err != nil {
+			lastErr = err
+		} else if server != nil && server.ID != 0 {
+			return server, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+	return nil, lastErr
 }
 
 func (serverHandler) read(ctx context.Context, c hcloudAPI, req *resource.ReadRequest) (*resource.ReadResult, error) {
