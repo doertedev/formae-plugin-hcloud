@@ -1,5 +1,5 @@
 name = "hcloud"
-version = "0.1.0"
+version = "0.1.1"
 namespace = "HETZNER"
 summary = "Hetzner Cloud resource plugin"
 description = "Hetzner Cloud (hcloud) resource plugin for formae"

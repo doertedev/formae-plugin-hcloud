@@ -3,7 +3,7 @@
 A [formae](https://github.com/platform-engineering-labs/formae) resource
 plugin for [Hetzner Cloud](https://www.hetzner.com/cloud) (hcloud).
 
-Status: `v0.1.0`. Targets formae `>= 0.87.0` (the `minFormaeVersion` declared
+Status: `v0.1.1`. Targets formae `>= 0.87.0` (the `minFormaeVersion` declared
 in [`formae-plugin.pkl`](formae-plugin.pkl)).
 
 ## What this is
