@@ -6,7 +6,7 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.48.0
 	github.com/platform-engineering-labs/formae/pkg/model v0.1.28
 	github.com/platform-engineering-labs/formae/pkg/plugin v0.4.2
-	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.6
+	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.8
 )
 
 require (

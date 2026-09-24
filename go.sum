@@ -112,8 +112,8 @@ github.com/platform-engineering-labs/formae/pkg/model v0.1.28 h1:7ndye94SGTvnyDQ
 github.com/platform-engineering-labs/formae/pkg/model v0.1.28/go.mod h1:1dmsFwoaJZkHevBsAIZr068CWzG7de1VNz7PFWvM3Z8=
 github.com/platform-engineering-labs/formae/pkg/plugin v0.4.2 h1:4a/hU6qT0alniJUlFXD+mZagKv+C8Hflh/m+/r4omjI=
 github.com/platform-engineering-labs/formae/pkg/plugin v0.4.2/go.mod h1:bytQxCfAxsHVeKZLoJ7i94s6SeGrn2CnqFTgYjW9gcw=
-github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.6 h1:xslGa2DOFslxD0jxwI/XaUxdetpqSn++rfpqbW/uLbE=
-github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.6/go.mod h1:gq591ZeRZ4jAHpdSvCyrOvi8qyALxcXQQhd0B6GRMAo=
+github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.8 h1:RYlF1P1hM8C8vocUZh0cw/q5IlZkoRfKdPkpTDGq3/s=
+github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.8/go.mod h1:LLA8i8x6YIQ8gwqhK0oW4wyuPOkHPukZdvGci0mqOWk=
 github.com/platform-engineering-labs/orbital v0.1.36 h1:nPMLxDbwDrjlhJoMQXAE86HtVhQHC2A6BJlWYmNM75c=
 github.com/platform-engineering-labs/orbital v0.1.36/go.mod h1:wwVPqOmW5RO78dDzL/G5CN1Ioao0P/aUsOZVrPVx64s=
 github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 h1:o4JXh1EVt9k/+g42oCprj/FisM4qX9L3sZB3upGN2ZU=
