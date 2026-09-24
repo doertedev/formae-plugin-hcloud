@@ -3,7 +3,7 @@ module github.com/doertedev/formae-plugin-hcloud
 go 1.26.0
 
 require (
-	github.com/hetznercloud/hcloud-go/v2 v2.47.0
+	github.com/hetznercloud/hcloud-go/v2 v2.48.0
 	github.com/platform-engineering-labs/formae/pkg/model v0.1.27
 	github.com/platform-engineering-labs/formae/pkg/plugin v0.4.1
 	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.6
@@ -45,7 +45,7 @@ require (
 	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 // indirect
 	github.com/lunixbochs/struc v0.0.0-20241101090106-8d528fa2c543 // indirect
 	github.com/mashiike/s3-setlock v0.2.0 // indirect
@@ -56,10 +56,10 @@ require (
 	github.com/platform-engineering-labs/formae/pkg/api/model v0.1.1 // indirect
 	github.com/platform-engineering-labs/orbital v0.1.36 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/prometheus/client_golang v1.23.2 // indirect
+	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.66.1 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.1 // indirect
 	github.com/theory/jsonpath v0.10.2 // indirect
@@ -85,7 +85,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
