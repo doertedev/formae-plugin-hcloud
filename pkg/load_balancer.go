@@ -512,14 +512,15 @@ func (loadBalancerHandler) delete(ctx context.Context, c hcloudAPI, req *resourc
 		pr.ErrorCode = resource.OperationErrorCodeNotFound
 		return &resource.DeleteResult{ProgressResult: pr}, nil
 	}
-	// hcloud Load Balancer Delete returns only (*Response, error) — there is
-	// no Action to poll, so the operation is treated as synchronous.
-	if _, err := c.LoadBalancer().Delete(ctx, lb); err != nil {
+	res, _, err := c.LoadBalancer().DeleteWithResult(ctx, lb)
+	if err != nil {
 		return &resource.DeleteResult{ProgressResult: fail(resource.OperationDelete, req.NativeID, "", err.Error(), mapHcloudError(err))}, nil
 	}
+	// Load Balancer deletion is asynchronous; let Status poll the returned
+	// action instead of reporting success before the API has completed it.
 	return &resource.DeleteResult{ProgressResult: progress(
-		resource.OperationDelete, resource.OperationStatusSuccess,
-		req.NativeID, "",
+		resource.OperationDelete, resource.OperationStatusInProgress,
+		req.NativeID, strconv.FormatInt(res.Action.ID, 10),
 	)}, nil
 }
 

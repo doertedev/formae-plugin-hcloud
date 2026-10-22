@@ -197,7 +197,7 @@ func sweepLoadBalancers(ctx context.Context, c *hcloud.Client) error {
 		return fmt.Errorf("list: %w", err)
 	}
 	for _, r := range items {
-		if _, err := c.LoadBalancer.Delete(ctx, r); err != nil {
+		if _, _, err := c.LoadBalancer.DeleteWithResult(ctx, r); err != nil {
 			log.Printf("sweep load_balancer %d: %v", r.ID, err)
 		}
 	}

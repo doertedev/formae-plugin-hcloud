@@ -24,7 +24,7 @@ type fakeLoadBalancerClient struct {
 	create                    func(context.Context, hcloud.LoadBalancerCreateOpts) (hcloud.LoadBalancerCreateResult, *hcloud.Response, error)
 	getByID                   func(context.Context, int64) (*hcloud.LoadBalancer, *hcloud.Response, error)
 	update                    func(context.Context, *hcloud.LoadBalancer, hcloud.LoadBalancerUpdateOpts) (*hcloud.LoadBalancer, *hcloud.Response, error)
-	delete                    func(context.Context, *hcloud.LoadBalancer) (*hcloud.Response, error)
+	deleteWithResult          func(context.Context, *hcloud.LoadBalancer) (hcloud.LoadBalancerDeleteResult, *hcloud.Response, error)
 	all                       func(context.Context) ([]*hcloud.LoadBalancer, error)
 	addService                func(context.Context, *hcloud.LoadBalancer, hcloud.LoadBalancerAddServiceOpts) (*hcloud.Action, *hcloud.Response, error)
 	updateService             func(context.Context, *hcloud.LoadBalancer, int, hcloud.LoadBalancerUpdateServiceOpts) (*hcloud.Action, *hcloud.Response, error)
@@ -58,11 +58,11 @@ func (f fakeLoadBalancerClient) Update(ctx context.Context, lb *hcloud.LoadBalan
 	return f.update(ctx, lb, opts)
 }
 
-func (f fakeLoadBalancerClient) Delete(ctx context.Context, lb *hcloud.LoadBalancer) (*hcloud.Response, error) {
-	if f.delete == nil {
-		return nil, nil
+func (f fakeLoadBalancerClient) DeleteWithResult(ctx context.Context, lb *hcloud.LoadBalancer) (hcloud.LoadBalancerDeleteResult, *hcloud.Response, error) {
+	if f.deleteWithResult == nil {
+		return hcloud.LoadBalancerDeleteResult{}, nil, nil
 	}
-	return f.delete(ctx, lb)
+	return f.deleteWithResult(ctx, lb)
 }
 
 func (f fakeLoadBalancerClient) All(ctx context.Context) ([]*hcloud.LoadBalancer, error) {
@@ -390,11 +390,11 @@ func TestLoadBalancer_Delete_Success(t *testing.T) {
 		getByID: func(context.Context, int64) (*hcloud.LoadBalancer, *hcloud.Response, error) {
 			return sampleLoadBalancer(), nil, nil
 		},
-		delete: func(_ context.Context, lb *hcloud.LoadBalancer) (*hcloud.Response, error) {
+		deleteWithResult: func(_ context.Context, lb *hcloud.LoadBalancer) (hcloud.LoadBalancerDeleteResult, *hcloud.Response, error) {
 			if lb.ID != 77 {
 				t.Errorf("delete id: want 77, got %d", lb.ID)
 			}
-			return nil, nil
+			return hcloud.LoadBalancerDeleteResult{Action: &hcloud.Action{ID: 201}}, nil, nil
 		},
 	}}
 	p := newPluginWithClient(api)
@@ -407,15 +407,14 @@ func TestLoadBalancer_Delete_Success(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	pr := res.ProgressResult
-	// LoadBalancer Delete is synchronous (no Action returned by hcloud-go).
-	if pr.OperationStatus != resource.OperationStatusSuccess {
-		t.Errorf("Status: want Success, got %q", pr.OperationStatus)
+	if pr.OperationStatus != resource.OperationStatusInProgress {
+		t.Errorf("Status: want InProgress, got %q", pr.OperationStatus)
 	}
 	if pr.NativeID != "77" {
 		t.Errorf("NativeID: want 77, got %q", pr.NativeID)
 	}
-	if pr.RequestID != "" {
-		t.Errorf("RequestID: want empty (sync), got %q", pr.RequestID)
+	if pr.RequestID != "201" {
+		t.Errorf("RequestID: want 201, got %q", pr.RequestID)
 	}
 }
 
