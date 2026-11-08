@@ -68,7 +68,7 @@ jobs:
         env:
           PKL_VERSION: 0.31.1
         run: |
-          curl -fsSL -o pkl "https://github.com/apple/pkl/releases/download/$PKL_VERSION/pkl-linux-amd64"
+          curl -fsSL --retry 3 --retry-delay 5 -o pkl "https://github.com/apple/pkl/releases/download/$PKL_VERSION/pkl-linux-amd64"
           chmod +x pkl
           sudo mv pkl /usr/local/bin/pkl
           pkl --version
@@ -96,7 +96,7 @@ jobs:
         env:
           PKL_VERSION: 0.31.1
         run: |
-          curl -fsSL -o pkl "https://github.com/apple/pkl/releases/download/$PKL_VERSION/pkl-linux-amd64"
+          curl -fsSL --retry 3 --retry-delay 5 -o pkl "https://github.com/apple/pkl/releases/download/$PKL_VERSION/pkl-linux-amd64"
           chmod +x pkl
           sudo mv pkl /usr/local/bin/pkl
           pkl --version
