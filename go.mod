@@ -4,7 +4,7 @@ go 1.26.10
 
 require (
 	github.com/hetznercloud/hcloud-go/v2 v2.53.0
-	github.com/platform-engineering-labs/formae/pkg/model v0.1.28
+	github.com/platform-engineering-labs/formae/pkg/model v0.1.29
 	github.com/platform-engineering-labs/formae/pkg/plugin v0.4.2
 	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.2.8
 )
